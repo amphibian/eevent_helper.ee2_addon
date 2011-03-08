@@ -4,7 +4,7 @@ class Eevent_helper_ext
 {
 	var $settings        = array();
 	var $name            = 'EEvent Helper';
-	var $version         = '2.0';
+	var $version         = '2.0.1';
 	var $description     = 'Automatically sets the expiration date for event entries, and more.';
 	var $settings_exist  = 'y';
 	var $docs_url        = 'http://github.com/amphibian/eevent_helper.ee2_addon';
@@ -165,121 +165,134 @@ class Eevent_helper_ext
 	}	
 	
 	
-	function entry_submission_end($entry_id, $meta, $data) {
+	function entry_submission_start($channel_id, $autosave) {
 			
 		// Get the array key for this channel's settings
 		// (if it is indeed an event channel)
-		$key = $this->is_event_channel($meta['channel_id']);
+		$key = $this->is_event_channel($channel_id);
 				
-		// If a key is found and we haven't already done this dance
-		if($key !== FALSE && !defined('EEVENT_HELPER_DONE'))
-		{
-			// This prevents us from  encountering the update_entry Groundhog Day
-			define('EEVENT_HELPER_DONE', TRUE);		
-			
+		if($key !== FALSE && $autosave == FALSE)
+		{	
 			// Get settings for this site
 			$settings = $this->get_settings();
-			
-			// update_entry needs one single array, but this hook splits it up amongst two			
-			$data = array_merge($meta, $data);
-			
+						
 			$midnight = $settings['midnight'][$key];
 			$clone = $settings['clone_date'][$key];
 			
-			// Are we using custom date fields, and do they have data?
-			$start_date_field = 
-				($settings['start_date_field'][$key] != 'entry_date') 
-				? 'field_id_'.$settings['start_date_field'][$key]
-				: '';
-			$end_date_field = ($settings['end_date_field'][$key] != 'none')
-				? 'field_id_'.$settings['end_date_field'][$key]
-				: '';
-					
-			// All dates are passed to us as UNIX timestamps by this hook, so we must convert
-			// Both for ease of editing, and because that's what update_entry expects for dates
+			// Are we using custom date fields?
+			$start_date_field_name = ($settings['start_date_field'][$key] == 'entry_date') ? '' : 'field_id_'.$settings['start_date_field'][$key];
+			$end_date_field_name = ($settings['end_date_field'][$key] == 'none') ? '' : 'field_id_'.$settings['end_date_field'][$key];
 			
-			$entry_date = $this->EE->localize->set_human_time($data['entry_date']);
-			$expiration_date = $this->EE->localize->set_human_time($data['expiration_date']);
-			
-			if($start_date_field && $data[$start_date_field])
+			// Are we using a custom start date field, and is there something in it?
+			if($start_date_field_name != '' && $this->EE->api_channel_entries->data[$start_date_field_name] != '')
 			{
-				$start_date = $this->EE->localize->set_human_time($data[$start_date_field]);
-				$data[$start_date_field] = $start_date;
+				$start_date_field_value = $this->EE->api_channel_entries->data[$start_date_field_name];
+				// Make sure offset is set to 'n'
+				$this->EE->api_channel_entries->data['field_offset_'.$settings['start_date_field'][$key]] = 'n';
 			}
-			
-			if($end_date_field && $data[$end_date_field])
+
+			// Are we using a custom end date field, and is there something in it?
+			if($end_date_field_name != '' && $this->EE->api_channel_entries->data[$end_date_field_name] != '')
 			{
-				$end_date = $this->EE->localize->set_human_time($data[$end_date_field]);
-				$data[$end_date_field] = $end_date;
-			}			
+				$end_date_field_value = $this->EE->api_channel_entries->data[$end_date_field_name];
+				// Make sure offset is set to 'n'
+				$this->EE->api_channel_entries->data['field_offset_'.$settings['end_date_field'][$key]] = 'n';
+			}		
 											
 			// Are we zeroing the time?
 			if($midnight == 'y')
 			{
 				// Zero the appropriate start date
-				if($start_date)
+				if(isset($start_date_field_value))
 				{
 					// We submitted a custom start date
-					$data[$start_date_field] = substr($start_date, 0, 10) . ' 12:00 AM';
+					$this->EE->api_channel_entries->data[$start_date_field_name] = substr($start_date_field_value, 0, 10) . ' 12:00 AM';
 				}
 				else
 				{
 					// Use the entry date
-					$data['entry_date'] = substr($entry_date, 0, 10) . ' 12:00 AM';
+					$this->EE->api_channel_entries->data['entry_date'] = substr($this->EE->api_channel_entries->data['entry_date'], 0, 10) . ' 12:00 AM';
 				}
 				
 				// Zero the end date if applicable
-				if($end_date)
+				if(isset($end_date_field_value))
 				{
-					$data[$end_date_field] = substr($end_date, 0, 10) . ' 12:00 AM';
+					$this->EE->api_channel_entries->data[$end_date_field_name] = substr($end_date_field_value, 0, 10) . ' 12:00 AM';
 				}
 			}
 		
 			// Set the expiration date
-			if($end_date) // We're using an end date
+			if(isset($end_date_field_value)) // We're using an end date
 			{ 
-				$data['expiration_date'] = substr($end_date, 0, 10) . ' 11:59 PM';
+				$this->EE->api_channel_entries->data['expiration_date'] = substr($end_date_field_value, 0, 10) . ' 11:59 PM';
 			}
 			else
 			{ 
-				if($start_date) // We're using a custom start date
+				if(isset($start_date_field_value)) // We're using a custom start date
 				{
-					$data['expiration_date'] = substr($start_date, 0, 10) . ' 11:59 PM';
+					$this->EE->api_channel_entries->data['expiration_date'] = substr($start_date_field_value, 0, 10) . ' 11:59 PM';
 				}
 				else // We're using the entry_date
 				{
-					$data['expiration_date'] = substr($entry_date, 0, 10) . ' 11:59 PM';
+					$this->EE->api_channel_entries->data['expiration_date'] = substr($this->EE->api_channel_entries->data['entry_date'], 0, 10) . ' 11:59 PM';
 				}
 			}
 			
 			// Clone start date to entry date
-			if($clone == 'y' && $start_date)
+			if($clone == 'y' && isset($start_date_field_value))
 			{
-				$data['entry_date'] = $data[$start_date_field];
+				$this->EE->api_channel_entries->data['entry_date'] = $this->EE->api_channel_entries->data[$start_date_field_name];
 			}
-															
-			// Now we update the already-inserted entry with the modified date values
-			$this->EE->load->library('api');
-			$this->EE->api->instantiate('channel_entries');
-			$update = $this->EE->api_channel_entries->update_entry($entry_id, $data);
 		}	
-	}	
+	}
+	
+	
+	function cp_js_end($data)
+	{
+
+		if($this->EE->extensions->last_call !== FALSE)
+		{
+			$data = $this->EE->extensions->last_call;
+		}
+					
+		// Doesn't appear to be a way to determine where you are in the control panel,
+		// as the C and M $_GET variables will also be 'javascript' and 'load'
+		// So I guess we just load this on every screen?
+		$settings = $this->get_settings();
+		foreach($settings['start_date_field'] as $setting)
+		{
+			if($setting != 'entry_date')
+			{
+				$data .= "$('select#field_offset_".$setting."').hide();".NL;
+			}
+		}
+		foreach($settings['end_date_field'] as $setting)
+		{
+			if($setting != 'none')
+			{
+				$data .= "$('select#field_offset_".$setting."').hide();".NL;
+			}
+		}
+						
+		return $data;
+	}		
 
 
 	function activate_extension()
 	{
 
 	    $hooks = array(
-	    	'entry_submission_end' => 'entry_submission_end'
+	    	'entry_submission_start',
+	    	'cp_js_end'
 	    );
 	    
-	    foreach($hooks as $hook => $method)
+	    foreach($hooks as $hook)
 	    {
 		    $this->EE->db->query($this->EE->db->insert_string('exp_extensions',
 		    	array(
 					'extension_id' => '',
 			        'class'        => ucfirst(get_class($this)),
-			        'method'       => $method,
+			        'method'       => $hook,
 			        'hook'         => $hook,
 			        'settings'     => '',
 			        'priority'     => 10,
