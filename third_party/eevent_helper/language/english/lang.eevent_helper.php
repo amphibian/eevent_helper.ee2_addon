@@ -13,5 +13,6 @@ $lang = array(
 	'no' => 'No',
 	'add_channel' => 'Add another events channel',
 	'remove_channel' => 'Remove this events channel',
-	'save_settings' => 'Save Settings'
+	'save_settings' => 'Save Settings',
+	'incorrect_eh_date_formatting' => 'Incorrect date formatting (must be in the form of YYYY-MM-DD)'
 );

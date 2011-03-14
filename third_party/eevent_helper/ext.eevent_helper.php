@@ -1,10 +1,29 @@
 <?php  if ( ! defined('BASEPATH')) exit('No direct script access allowed');
 
+/*
+    This file is part of EEvent Helper add-on for ExpressionEngine.
+
+    EEvent Helper is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Foobar is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    Read the terms of the GNU General Public License
+    at <http://www.gnu.org/licenses/>.
+    
+    Copyright 2011 Derek Hogue
+*/
+
 class Eevent_helper_ext
 {
 	var $settings        = array();
 	var $name            = 'EEvent Helper';
-	var $version         = '2.0.1';
+	var $version         = '2.0.2';
 	var $description     = 'Automatically sets the expiration date for event entries, and more.';
 	var $settings_exist  = 'y';
 	var $docs_url        = 'http://github.com/amphibian/eevent_helper.ee2_addon';
@@ -76,7 +95,7 @@ class Eevent_helper_ext
 			FROM exp_channels as c, exp_channel_fields as f 
 			WHERE c.field_group = f.group_id 
 			AND c.site_id = '".$this->EE->db->escape_str($site_id)."' 
-			AND f.field_type = 'date' 
+			AND f.field_type IN('date','eevent_helper') 
 			ORDER BY c.channel_title ASC,f.field_order ASC");
 			
 		foreach($fields->result_array() as $value)
@@ -172,7 +191,7 @@ class Eevent_helper_ext
 		$key = $this->is_event_channel($channel_id);
 				
 		if($key !== FALSE && $autosave == FALSE)
-		{	
+		{				
 			// Get settings for this site
 			$settings = $this->get_settings();
 						
