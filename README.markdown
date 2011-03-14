@@ -6,6 +6,8 @@ You can also specify a custom *Start Date* field to use instead of the default *
 
 This way, you and your clients can use friendlier custom date fields for both start and end dates, while always keeping the entry's *Entry Date* and *Expiration Date* set properly for use in `exp:channel:entries` tag parameters.
 
-Note that only fields of the built-in ExpressionEngine "Date" fieldtype can be selected as *Start Date* or *End Date* fields. EEvent helper will also remove the localization toggle from your chosen custom date fields and automatically set their value to "Fixed".
+EEvent Helper also includes it's own Date fieldtype, which uses the standard pop-put calendar, but excludes the time portion of the fields and the date localization menu. The fieldtype can be used as a drop-in replacement for EE Date fields, and used without the EEvent Helper extension as well.
+
+Note that only fields of either the built-in Date or EEvent Helper Date fieldtype can be selected as *Start Date* or *End Date* fields. EEvent helper will also remove the localization menu from your chosen custom date fields and automatically set their value to "Fixed".
 
 *EEvent Helper has been tested on ExpressionEngine 2.1.3*.
