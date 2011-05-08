@@ -174,7 +174,7 @@ class Eevent_helper_ext
 		{							
 			// Get settings for this site
 			$settings = $this->get_settings();
-			
+
 			// Initialize our new data
 			$new = array();
 			if(isset($_POST['entry_date']) && !empty($_POST['entry_date']))
@@ -257,7 +257,7 @@ class Eevent_helper_ext
 			{
 				$new[$end_date_field_short_name] = $this->prepare_date_field($_POST[$end_date_field_short_name], 'end');
 			}						
-											
+
 			// Are we zeroing the time?
 			
 			if($settings['midnight'][$key] == 'y')
@@ -266,29 +266,29 @@ class Eevent_helper_ext
 				if(isset($start_date_field_name) && isset($new[$start_date_field_name]) && !empty($new[$start_date_field_name]))
 				{
 					// We submitted a custom start date via the CP, fix it
-					$new[$start_date_field_name]= substr($new[$start_date_field_name], 0, 10) . ' 12:00 AM';
+					$new[$start_date_field_name]= substr($new[$start_date_field_name], 0, 10) . ' 00:00';
 				}
 				elseif(isset($start_date_field_short_name) && isset($new[$start_date_field_short_name]) && !empty($new[$start_date_field_short_name]))
 				{
 					// We submitted a custom start date via SafeCracker, fix it
-					$new[$start_date_field_short_name]= substr($new[$start_date_field_short_name], 0, 10) . ' 12:00 AM';
+					$new[$start_date_field_short_name]= substr($new[$start_date_field_short_name], 0, 10) . ' 00:00';
 				}
 				else
 				{
 					// Fix the entry date instead
-					$new['entry_date'] = substr($new['entry_date'], 0, 10) . ' 12:00 AM';
+					$new['entry_date'] = substr($new['entry_date'], 0, 10) . ' 00:00';
 				}
 				
 				// Zero the end date if applicable
 				if(isset($end_date_field_name) && isset($new[$end_date_field_name]) && !empty($new[$end_date_field_name]))
 				{
 					// We submitted a custom end date via the CP, fix it
-					$new[$end_date_field_name] = substr($new[$end_date_field_name], 0, 10) . ' 12:00 AM';
+					$new[$end_date_field_name] = substr($new[$end_date_field_name], 0, 10) . ' 00:00';
 				}
 				if(isset($end_date_field_short_name) && isset($new[$end_date_field_short_name]) && !empty($new[$end_date_field_short_name]))
 				{
 					// We submitted a custom end date via SafeCracker, fix it
-					$new[$end_date_field_short_name] = substr($new[$end_date_field_short_name], 0, 10) . ' 12:00 AM';
+					$new[$end_date_field_short_name] = substr($new[$end_date_field_short_name], 0, 10) . ' 00:00';
 				}				
 			}
 		
@@ -297,34 +297,34 @@ class Eevent_helper_ext
 			if(isset($end_date_field_name) && isset($new[$end_date_field_name]) && !empty($new[$end_date_field_name]))
 			{ 
 				// We're using an end date via the CP
-				$new['expiration_date'] = substr($new[$end_date_field_name], 0, 10) . ' 11:59 PM';
+				$new['expiration_date'] = substr($new[$end_date_field_name], 0, 10) . ' 23:59';
 			}
 			elseif(isset($end_date_field_short_name) && isset($new[$end_date_field_short_name]) && !empty($new[$end_date_field_short_name]))
 			{ 
 				// We're using an end date via SafeCracker
-				$new['expiration_date'] = substr($new[$end_date_field_short_name], 0, 10) . ' 11:59 PM';
+				$new['expiration_date'] = substr($new[$end_date_field_short_name], 0, 10) . ' 23:59';
 			}
 			else
 			{ 
 				if(isset($start_date_field_name) && isset($new[$start_date_field_name]) && !empty($new[$start_date_field_name]))
 				{
 					// We're using a custom start date via the CP
-					$new['expiration_date'] = substr($new[$start_date_field_name], 0, 10) . ' 11:59 PM';
+					$new['expiration_date'] = substr($new[$start_date_field_name], 0, 10) . ' 23:59';
 				}
 				elseif(isset($start_date_field_short_name) && isset($new[$start_date_field_short_name]) && !empty($new[$start_date_field_short_name]))
 				{
 					// We're using a custom start date via SafeCracker
-					$new['expiration_date'] = substr($new[$start_date_field_short_name], 0, 10) . ' 11:59 PM';
+					$new['expiration_date'] = substr($new[$start_date_field_short_name], 0, 10) . ' 23:59';
 				}
 				else
 				{
 					// We're using the entry_date
-					$new['expiration_date'] = substr($new['entry_date'], 0, 10) . ' 11:59 PM';
+					$new['expiration_date'] = substr($new['entry_date'], 0, 10) . ' 23:59';
 				}
 			}
-			
+
 			// Clone start date to entry date
-			
+
 			if($settings['clone_date'][$key] == 'y')
 			{
 				if(isset($start_date_field_name) && isset($new[$start_date_field_name]) && !empty($new[$start_date_field_name]))
@@ -338,7 +338,40 @@ class Eevent_helper_ext
 					$new['entry_date'] = $new[$start_date_field_short_name];
 				}
 			}
-			
+
+			/* GDmac, fix for DST indiscrepancies. 
+			 *
+			 * The channel entries API runs convert_human_date_to_gmt() on the entry_date etc.
+                         * when it's a string, and we don't want to hack core.
+			 * The easy way would have been $date=strtotime($date) but 
+			 * eevent_helper fieldtype doesn't like timestamps, so we do it a bit different.
+			 *
+			 * Essentially, when the system is in DST and you enter dates outside DST 
+			 * then convert_human_date_to_gmt() will add or substract an extra hour. 
+			 * So... we compensate.
+			 */
+
+			$system_dst = date("I", $this->EE->localize->set_server_time());
+
+			foreach($new as $key => $date)
+			{
+				// don't we all love unix timestamps
+				$date_stamp = $this->EE->localize->timestamp_to_gmt($date);
+
+				if($system_dst == 1) 
+				{
+					// system is in DST, but entry is not, add an extra hour, system will subtract one for us :P
+					if( date("I", $date_stamp) == 0) $date_stamp = $date_stamp + 3600;
+				}
+				else
+				{
+					if(date("I", $date_stamp) == 1) $date_stamp = $date_stamp - 3600;
+				}
+
+				$new[$key] = $this->EE->localize->set_human_time( $date_stamp, FALSE );
+		
+			}
+
 			// Revert and DropDate fields back to their original posted states
 			// (Or DropDate won't validate them nor know what to do with them)
 			
