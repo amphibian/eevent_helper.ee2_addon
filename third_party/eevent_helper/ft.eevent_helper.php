@@ -43,9 +43,9 @@ class Eevent_helper_ft extends EE_Fieldtype {
 		*/
 		if(strlen($data) == 10)
 		{
-			$data = $data.' 12:00 AM';
+			$data = $data.' 00:00 AM';
 		}
-		return $this->EE->localize->convert_human_date_to_gmt($data);
+		return $this->EE->localize->timestamp_to_gmt($data);
 	}
 
 
@@ -79,7 +79,7 @@ class Eevent_helper_ft extends EE_Fieldtype {
 		{
 			if(strlen($field_data) == 10 && is_numeric($field_data))
 			{
-				$date = substr($this->EE->localize->set_human_time($field_data, FALSE), 0, 10);
+				$date = substr($this->EE->localize->set_human_time($field_data), 0, 10);
 			}
 		}
 
