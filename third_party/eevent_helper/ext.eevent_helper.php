@@ -23,7 +23,7 @@ class Eevent_helper_ext
 {
 	var $settings = array();
 	var $name = 'EEvent Helper';
-	var $version = '2.0.5';
+	var $version = '2.0.6';
 	var $description = 'Automatically sets the expiration date for event entries, and more.';
 	var $settings_exist = 'y';
 	var $docs_url = 'http://github.com/amphibian/eevent_helper.ee2_addon';
@@ -342,7 +342,7 @@ class Eevent_helper_ext
 			/* GDmac, fix for DST indiscrepancies.
 			 *
 			 * The channel entries API runs convert_human_date_to_gmt() on the entry_date etc.
-                         * when it's a string, and we don't want to hack core.
+			 * when it's a string, and we don't want to hack core.
 			 * The easy way would have been $date=strtotime($date) but
 			 * eevent_helper fieldtype doesn't like timestamps, so we do it a bit different.
 			 *
@@ -375,19 +375,19 @@ class Eevent_helper_ext
 			// Revert and DropDate fields back to their original posted states
 			// (Or DropDate won't validate them nor know what to do with them)
 
-			if(isset($start_date_field_name) && $this->is_dropdate($_POST[$start_date_field_name]))
+			if(isset($start_date_field_name) && isset($_POST[$start_date_field_name]) && $this->is_dropdate($_POST[$start_date_field_name]))
 			{
 					unset($new[$start_date_field_name]);
 			}
-			if(isset($start_date_field_short_name) && $this->is_dropdate($_POST[$start_date_field_short_name]))
+			if(isset($start_date_field_short_name) && isset($_POST[$start_date_field_short_name]) && $this->is_dropdate($_POST[$start_date_field_short_name]))
 			{
 				unset($new[$start_date_field_short_name]);
 			}
-			if(isset($end_date_field_name) && $this->is_dropdate($_POST[$end_date_field_name]))
+			if(isset($end_date_field_name) && isset($_POST[$end_date_field_name]) && $this->is_dropdate($_POST[$end_date_field_name]))
 			{
 					unset($new[$end_date_field_name]);
 			}
-			if(isset($end_date_field_short_name) && $this->is_dropdate($_POST[$end_date_field_short_name]))
+			if(isset($end_date_field_short_name) && isset($_POST[$end_date_field_short_name]) && $this->is_dropdate($_POST[$end_date_field_short_name]))
 			{
 				unset($new[$end_date_field_short_name]);
 			}
@@ -495,6 +495,10 @@ class Eevent_helper_ext
 		{
 			$data = $this->EE->extensions->last_call;
 		}
+		
+		// the offset field has been removed from EE 2.1.4 beta 
+		// returning here
+		return $data;
 
 		// Doesn't appear to be a way to determine where you are in the control panel,
 		// as the C and M $_GET variables will always be 'javascript' and 'load'
