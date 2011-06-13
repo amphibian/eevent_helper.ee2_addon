@@ -8,7 +8,7 @@
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
-    Foobar is distributed in the hope that it will be useful,
+    EEvent Helper is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
@@ -23,7 +23,7 @@ class Eevent_helper_ft extends EE_Fieldtype {
 
 	var $info = array(
 		'name'		=> 'EEvent Helper Date',
-		'version'	=> '1.0'
+		'version'	=> '1.0.1'
 	);
 
 	var $has_array_data = FALSE;
@@ -43,7 +43,7 @@ class Eevent_helper_ft extends EE_Fieldtype {
 		*/
 		if(strlen($data) == 10)
 		{
-			$data = $data.' 12:00 AM';
+			$data = $data.' 00:00:00';
 		}
 		return $this->EE->localize->convert_human_date_to_gmt($data);
 	}
@@ -107,24 +107,8 @@ class Eevent_helper_ft extends EE_Fieldtype {
 
 	function replace_tag($data, $params = array(), $tagdata = FALSE)
 	{
-		// If the timestamp is within DST, add an hour
-		if(date('I', $data))
-		{
-			$data = ($data + 3600);
-		}
-		/* 
-			EE's date formatting functions seem needlessly complex.
-			Maybe over my head and I'm stupid?
-			Using the date() function seems much simpler.
-			We replace the % characters to maintain consistency
-			with how the native EE 'format' parameter works.
-		*/
-		if(isset($params['format']))
-		{
-			$format = str_replace('%', '', $params['format']);
-			$data = date($format, $data);
-		}
-		return $data;
+		$format = (isset($params['format'])) ? $params['format'] : '%U';
+		return $this->EE->localize->decode_date($format, $data);
 	}
 
 

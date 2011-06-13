@@ -8,7 +8,7 @@
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
-    Foobar is distributed in the hope that it will be useful,
+    EEvent Helper is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
@@ -250,12 +250,12 @@ class Eevent_helper_ext
 			
 			if(isset($end_date_field_name) && isset($_POST[$end_date_field_name]) && !empty($_POST[$end_date_field_name]))
 			{
-				$new[$end_date_field_name] = $this->prepare_date_field($_POST[$end_date_field_name], 'end');
+				$new[$end_date_field_name] = $this->prepare_date_field($_POST[$end_date_field_name]);
 			}
 			
 			if(isset($end_date_field_short_name) && isset($_POST[$end_date_field_short_name]) && !empty($_POST[$end_date_field_short_name]))
 			{
-				$new[$end_date_field_short_name] = $this->prepare_date_field($_POST[$end_date_field_short_name], 'end');
+				$new[$end_date_field_short_name] = $this->prepare_date_field($_POST[$end_date_field_short_name]);
 			}						
 											
 			// Are we zeroing the time?
