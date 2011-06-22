@@ -23,7 +23,7 @@ class Eevent_helper_ext
 {
 	var $settings = array();
 	var $name = 'EEvent Helper';
-	var $version = '2.0.4';
+	var $version = '2.0.5';
 	var $description = 'Automatically sets the expiration date for event entries, and more.';
 	var $settings_exist = 'y';
 	var $docs_url = 'http://github.com/amphibian/eevent_helper.ee2_addon';
@@ -142,6 +142,9 @@ class Eevent_helper_ext
 	
 	function get_settings($all_sites = FALSE)
 	{
+		// Get current site ID
+		$site_id = $this->EE->config->item('site_id');	
+		
 		$get_settings = $this->EE->db->query("SELECT settings 
 			FROM exp_extensions 
 			WHERE class = '".ucfirst(get_class($this))."' 
@@ -149,10 +152,13 @@ class Eevent_helper_ext
 		
 		$this->EE->load->helper('string');
 		
-		if ($get_settings->num_rows() > 0 && $get_settings->row('settings') != '')
+		if($get_settings->num_rows() > 0 && $get_settings->row('settings') != '')
         {
         	$settings = strip_slashes(unserialize($get_settings->row('settings')));
-        	$settings = ($all_sites == TRUE) ? $settings : $settings[$this->EE->config->item('site_id')];
+        	if($all_sites == FALSE)
+        	{
+        		$settings = (isset($settings[$site_id])) ? $settings[$site_id] : array();
+        	}
         }
         else
         {
@@ -339,12 +345,12 @@ class Eevent_helper_ext
 				}
 			}
 			
-			// Revert and DropDate fields back to their original posted states
+			// Revert DropDate fields back to their original posted states
 			// (Or DropDate won't validate them nor know what to do with them)
 			
 			if(isset($start_date_field_name) && $this->is_dropdate($_POST[$start_date_field_name]))
 			{
-					unset($new[$start_date_field_name]);
+				unset($new[$start_date_field_name]);
 			}
 			if(isset($start_date_field_short_name) && $this->is_dropdate($_POST[$start_date_field_short_name]))
 			{
@@ -352,7 +358,7 @@ class Eevent_helper_ext
 			}
 			if(isset($end_date_field_name) && $this->is_dropdate($_POST[$end_date_field_name]))
 			{
-					unset($new[$end_date_field_name]);
+				unset($new[$end_date_field_name]);
 			}
 			if(isset($end_date_field_short_name) && $this->is_dropdate($_POST[$end_date_field_short_name]))
 			{
@@ -467,18 +473,21 @@ class Eevent_helper_ext
 		// as the C and M $_GET variables will always be 'javascript' and 'load'
 		// So I guess we just load this on every screen?
 		$settings = $this->get_settings();
-		foreach($settings['start_date_field'] as $setting)
+		if(!empty($settings))
 		{
-			if($setting != 'entry_date')
+			foreach($settings['start_date_field'] as $setting)
 			{
-				$data .= "$('select#field_offset_".$setting."').hide();".NL;
+				if($setting != 'entry_date')
+				{
+					$data .= "$('select#field_offset_".$setting."').hide();".NL;
+				}
 			}
-		}
-		foreach($settings['end_date_field'] as $setting)
-		{
-			if($setting != 'none')
+			foreach($settings['end_date_field'] as $setting)
 			{
-				$data .= "$('select#field_offset_".$setting."').hide();".NL;
+				if($setting != 'none')
+				{
+					$data .= "$('select#field_offset_".$setting."').hide();";
+				}
 			}
 		}
 						
