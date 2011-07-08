@@ -23,7 +23,7 @@ class Eevent_helper_ext
 {
 	var $settings = array();
 	var $name = 'EEvent Helper';
-	var $version = '2.0.6';
+	var $version = '2.0.7';
 	var $description = 'Automatically sets the expiration date for event entries, and more.';
 	var $settings_exist = 'y';
 	var $docs_url = 'http://github.com/amphibian/eevent_helper.ee2_addon';
@@ -171,6 +171,11 @@ class Eevent_helper_ext
 	function process_dates($channel_id, $hook, $custom_fields = '')
 	{
 		/*
+			To-do: holy christ, clean up this mess. Move each nugget to a class method;
+			store modified date data in class variables. Get more sleep, etc.
+		*/
+		
+		/*
 			Get the array key for this channel's settings
 			(if it is indeed an event channel).
 		*/
@@ -272,29 +277,29 @@ class Eevent_helper_ext
 				if(isset($start_date_field_name) && isset($new[$start_date_field_name]) && !empty($new[$start_date_field_name]))
 				{
 					// We submitted a custom start date via the CP, fix it
-					$new[$start_date_field_name]= substr($new[$start_date_field_name], 0, 10) . ' 12:00 AM';
+					$new[$start_date_field_name]= substr($new[$start_date_field_name], 0, 10) . ' 12:00:00 AM';
 				}
 				elseif(isset($start_date_field_short_name) && isset($new[$start_date_field_short_name]) && !empty($new[$start_date_field_short_name]))
 				{
 					// We submitted a custom start date via SafeCracker, fix it
-					$new[$start_date_field_short_name]= substr($new[$start_date_field_short_name], 0, 10) . ' 12:00 AM';
+					$new[$start_date_field_short_name]= substr($new[$start_date_field_short_name], 0, 10) . ' 12:00:00 AM';
 				}
 				else
 				{
 					// Fix the entry date instead
-					$new['entry_date'] = substr($new['entry_date'], 0, 10) . ' 12:00 AM';
+					$new['entry_date'] = substr($new['entry_date'], 0, 10) . ' 12:00:00 AM';
 				}
 				
 				// Zero the end date if applicable
 				if(isset($end_date_field_name) && isset($new[$end_date_field_name]) && !empty($new[$end_date_field_name]))
 				{
 					// We submitted a custom end date via the CP, fix it
-					$new[$end_date_field_name] = substr($new[$end_date_field_name], 0, 10) . ' 12:00 AM';
+					$new[$end_date_field_name] = substr($new[$end_date_field_name], 0, 10) . ' 12:00:00 AM';
 				}
 				if(isset($end_date_field_short_name) && isset($new[$end_date_field_short_name]) && !empty($new[$end_date_field_short_name]))
 				{
 					// We submitted a custom end date via SafeCracker, fix it
-					$new[$end_date_field_short_name] = substr($new[$end_date_field_short_name], 0, 10) . ' 12:00 AM';
+					$new[$end_date_field_short_name] = substr($new[$end_date_field_short_name], 0, 10) . ' 12:00:00 AM';
 				}				
 			}
 		
@@ -303,29 +308,29 @@ class Eevent_helper_ext
 			if(isset($end_date_field_name) && isset($new[$end_date_field_name]) && !empty($new[$end_date_field_name]))
 			{ 
 				// We're using an end date via the CP
-				$new['expiration_date'] = substr($new[$end_date_field_name], 0, 10) . ' 11:59 PM';
+				$new['expiration_date'] = substr($new[$end_date_field_name], 0, 10) . ' 11:59:59 PM';
 			}
 			elseif(isset($end_date_field_short_name) && isset($new[$end_date_field_short_name]) && !empty($new[$end_date_field_short_name]))
 			{ 
 				// We're using an end date via SafeCracker
-				$new['expiration_date'] = substr($new[$end_date_field_short_name], 0, 10) . ' 11:59 PM';
+				$new['expiration_date'] = substr($new[$end_date_field_short_name], 0, 10) . ' 11:59:59 PM';
 			}
 			else
 			{ 
 				if(isset($start_date_field_name) && isset($new[$start_date_field_name]) && !empty($new[$start_date_field_name]))
 				{
 					// We're using a custom start date via the CP
-					$new['expiration_date'] = substr($new[$start_date_field_name], 0, 10) . ' 11:59 PM';
+					$new['expiration_date'] = substr($new[$start_date_field_name], 0, 10) . ' 11:59:59 PM';
 				}
 				elseif(isset($start_date_field_short_name) && isset($new[$start_date_field_short_name]) && !empty($new[$start_date_field_short_name]))
 				{
 					// We're using a custom start date via SafeCracker
-					$new['expiration_date'] = substr($new[$start_date_field_short_name], 0, 10) . ' 11:59 PM';
+					$new['expiration_date'] = substr($new[$start_date_field_short_name], 0, 10) . ' 11:59:59 PM';
 				}
 				else
 				{
 					// We're using the entry_date
-					$new['expiration_date'] = substr($new['entry_date'], 0, 10) . ' 11:59 PM';
+					$new['expiration_date'] = substr($new['entry_date'], 0, 10) . ' 11:59:59 PM';
 				}
 			}
 			
@@ -336,12 +341,12 @@ class Eevent_helper_ext
 				if(isset($start_date_field_name) && isset($new[$start_date_field_name]) && !empty($new[$start_date_field_name]))
 				{
 					// We're using a custom start date via the CP
-					$new['entry_date'] = $new[$start_date_field_name];
+					$new['entry_date'] = (strlen($new[$start_date_field_name]) == 10) ? $new[$start_date_field_name].' 12:00:00 AM' : $new[$start_date_field_name];
 				}
 				elseif(isset($start_date_field_short_name) && isset($new[$start_date_field_short_name]) && !empty($new[$start_date_field_short_name]))
 				{
 					// We're using a custom start date via SafeCracker
-					$new['entry_date'] = $new[$start_date_field_short_name];
+					$new['entry_date'] = (strlen($new[$start_date_field_short_name]) == 10) ? $new[$start_date_field_short_name].' 12:00:00 AM' : $new[$start_date_field_short_name];
 				}
 			}
 			
