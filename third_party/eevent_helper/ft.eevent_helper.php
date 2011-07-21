@@ -23,7 +23,7 @@ class Eevent_helper_ft extends EE_Fieldtype {
 
 	var $info = array(
 		'name'		=> 'EEvent Helper Date',
-		'version'	=> '1.0.2'
+		'version'	=> '1.0.3'
 	);
 
 	var $has_array_data = FALSE;
@@ -43,7 +43,7 @@ class Eevent_helper_ft extends EE_Fieldtype {
 		*/
 		if(strlen($data) == 10)
 		{
-			$data = $data.' 12:00 AM';
+			$data = $data.' 12:00:00 AM';
 		}
 		return $this->EE->localize->convert_human_date_to_gmt($data);
 	}
