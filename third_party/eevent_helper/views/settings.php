@@ -21,7 +21,7 @@
 		</tr>
 	</thead>
 <?php
-	// Build a settings panel for each events weblog
+	// Build a settings panel for each events channel
 	while($current_channel <= $total_events_channels) :
 ?>
 	<tbody>
@@ -68,6 +68,15 @@
 			<td>
 				<?php echo form_dropdown('midnight[]', $bool, 
 				(isset($current['midnight'][$count])) ? $current['midnight'][$count] : 'n'); ?>
+			</td>
+		</tr>
+		<tr class="odd">
+			<td>
+				<?php echo $this->EE->lang->line('set_expiry'); ?>
+			</td>
+			<td>
+				<?php echo form_dropdown('set_expiry[]', $bool, 
+				(isset($current['set_expiry'][$count])) ? $current['set_expiry'][$count] : 'n'); ?>
 			</td>
 		</tr>
 		<tr>

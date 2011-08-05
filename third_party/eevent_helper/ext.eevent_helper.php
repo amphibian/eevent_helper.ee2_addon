@@ -1,14 +1,14 @@
 <?php  if ( ! defined('BASEPATH')) exit('No direct script access allowed');
 
 /*
-    This file is part of EEvent Helper add-on for ExpressionEngine.
+    This file is part of Event Helper add-on for ExpressionEngine.
 
-    EEvent Helper is free software: you can redistribute it and/or modify
+    Event Helper is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
-    EEvent Helper is distributed in the hope that it will be useful,
+    Event Helper is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
@@ -22,14 +22,20 @@
 class Eevent_helper_ext
 {
 	var $settings = array();
-	var $name = 'EEvent Helper';
-	var $version = '2.0.7';
+	var $name = 'Event Helper';
+	var $version = '2.1';
 	var $description = 'Automatically sets the expiration date for event entries, and more.';
 	var $settings_exist = 'y';
 	var $docs_url = 'http://github.com/amphibian/eevent_helper.ee2_addon';
 	var $slug = 'eevent_helper';
 	var $debug = FALSE;
-	
+
+	var $new_data = array();
+	var $sd_id = FALSE;
+	var $sd_name = FALSE;
+	var $ed_id = FALSE;
+	var $ed_name = FALSE;	
+		
 	
 	function Eevent_helper_ext($settings='')
 	{
@@ -122,7 +128,7 @@ class Eevent_helper_ext
 		// Get current site ID
 		$site_id = $this->EE->config->item('site_id');	
 		
-		// Get settings
+		// Get settings for all sites
 		$settings = $this->get_settings(TRUE);
 		
 		$settings[$site_id] = array(
@@ -130,7 +136,8 @@ class Eevent_helper_ext
 			'start_date_field' => $_POST['start_date_field'],
 			'end_date_field' => $_POST['end_date_field'],
 			'clone_date' => $_POST['clone_date'],
-			'midnight' => $_POST['midnight']
+			'midnight' => $_POST['midnight'],
+			'set_expiry' => $_POST['set_expiry']
 		);
 		
 		$this->EE->db->where('class', ucfirst(get_class($this)));
@@ -168,215 +175,57 @@ class Eevent_helper_ext
 	}
 	
 
-	function process_dates($channel_id, $hook, $custom_fields = '')
+	function entry_submission_start($channel_id, $autosave)
 	{
-		/*
-			To-do: holy christ, clean up this mess. Move each nugget to a class method;
-			store modified date data in class variables. Get more sleep, etc.
-		*/
-		
-		/*
-			Get the array key for this channel's settings
-			(if it is indeed an event channel).
-		*/
-		$key = $this->is_event_channel($channel_id);
+		if($autosave == FALSE)
+		{
+			$this->_process_dates($channel_id, 'entry_submission_start');
+		}
+	}
+	
+	
+	function safecracker_submit_entry_start($sc)
+	{
+		// print_r($sc); exit();
+		$this->_process_dates($sc->channel['channel_id'], 'safecracker_submit_entry_start', $sc->custom_fields);
+	}
+	
+	
+	function _process_dates($channel_id, $hook, $custom_fields = '')
+	{
+
+		$key = $this->_is_event_channel($channel_id);
 				
 		if($key !== FALSE)
 		{							
-			// Get settings for this site
-			$settings = $this->get_settings();
-			
-			// Initialize our new data
-			$new = array();
-			if(isset($_POST['entry_date']) && !empty($_POST['entry_date']))
+			$this->settings = $this->get_settings();
+
+			$this->_set_basics();			
+			$this->_check_start_date($key, $custom_fields);
+			$this->_check_end_date($key, $custom_fields);
+									
+			if($this->settings['midnight'][$key] == 'y')
 			{
-				$new['entry_date'] = $_POST['entry_date'];
+				$this->_set_midnight();
 			}
-			else
+
+			if($this->settings['set_expiry'][$key] == 'y')
 			{
-				$new['entry_date'] = $this->EE->localize->set_human_time();
-			}
-			if(isset($_POST['expiration_date']) && !empty($_POST['expiration_date']))
+				$this->_set_expiry();
+			}		
+
+			if($this->settings['clone_date'][$key] == 'y')
 			{
-				$new['expiration_date'] = $_POST['expiration_date'];
+				$this->_clone_start_date();	
 			}
 			
-			/*
-				When looking custom start and end date fields,
-				we need to look for both control panel-style field names (e.g., field_id_x)
-				and SafeCracker-style field_names (e.g., my_start_date).
-				
-				We refer to these as x_date_field_name and x_date_field_short name respectively.
-				SafeCracker suuplies us with an array of custom field data
-				that includes both field_name and field_id,
-				so we can avoid any extra database calls.
-			
-				For each custom date field we also check its format to see if it's an
-				EE date/EH date field, or a DropDate field, so we can format accordingly.
-			*/
-			
-			// Are we using a custom start date field?
-			
-			if($settings['start_date_field'][$key] != 'entry_date')
-			{
-				$start_date_field_name = 'field_id_'.$settings['start_date_field'][$key];
-				if(is_array($custom_fields))
-				{
-					foreach($custom_fields as $field_name => $attributes)
-					{
-						if($attributes['field_id'] == $settings['start_date_field'][$key])
-						{
-							$start_date_field_short_name = $field_name;
-						}
-					}
-				}
-			}
-			
-			if(isset($start_date_field_name) && isset($_POST[$start_date_field_name]) && !empty($_POST[$start_date_field_name]))
-			{
-				$new[$start_date_field_name] = $this->prepare_date_field($_POST[$start_date_field_name]);
-			}
-			
-			if(isset($start_date_field_short_name) && isset($_POST[$start_date_field_short_name]) && !empty($_POST[$start_date_field_short_name]))
-			{
-				$new[$start_date_field_short_name] = $this->prepare_date_field($_POST[$start_date_field_short_name]);
-			}			
-			
-			// Are we using a custom end date field?
-			
-			if($settings['end_date_field'][$key] != 'none')
-			{
-				$end_date_field_name = 'field_id_'.$settings['end_date_field'][$key];
-				if(is_array($custom_fields))
-				{
-					foreach($custom_fields as $field_name => $attributes)
-					{
-						if($attributes['field_id'] == $settings['end_date_field'][$key])
-						{
-							$end_date_field_short_name = $field_name;
-						}
-					}
-				}
-			}
-			
-			if(isset($end_date_field_name) && isset($_POST[$end_date_field_name]) && !empty($_POST[$end_date_field_name]))
-			{
-				$new[$end_date_field_name] = $this->prepare_date_field($_POST[$end_date_field_name]);
-			}
-			
-			if(isset($end_date_field_short_name) && isset($_POST[$end_date_field_short_name]) && !empty($_POST[$end_date_field_short_name]))
-			{
-				$new[$end_date_field_short_name] = $this->prepare_date_field($_POST[$end_date_field_short_name]);
-			}						
-											
-			// Are we zeroing the time?
-			
-			if($settings['midnight'][$key] == 'y')
-			{
-				// Zero the appropriate start date
-				if(isset($start_date_field_name) && isset($new[$start_date_field_name]) && !empty($new[$start_date_field_name]))
-				{
-					// We submitted a custom start date via the CP, fix it
-					$new[$start_date_field_name]= substr($new[$start_date_field_name], 0, 10) . ' 12:00:00 AM';
-				}
-				elseif(isset($start_date_field_short_name) && isset($new[$start_date_field_short_name]) && !empty($new[$start_date_field_short_name]))
-				{
-					// We submitted a custom start date via SafeCracker, fix it
-					$new[$start_date_field_short_name]= substr($new[$start_date_field_short_name], 0, 10) . ' 12:00:00 AM';
-				}
-				else
-				{
-					// Fix the entry date instead
-					$new['entry_date'] = substr($new['entry_date'], 0, 10) . ' 12:00:00 AM';
-				}
-				
-				// Zero the end date if applicable
-				if(isset($end_date_field_name) && isset($new[$end_date_field_name]) && !empty($new[$end_date_field_name]))
-				{
-					// We submitted a custom end date via the CP, fix it
-					$new[$end_date_field_name] = substr($new[$end_date_field_name], 0, 10) . ' 12:00:00 AM';
-				}
-				if(isset($end_date_field_short_name) && isset($new[$end_date_field_short_name]) && !empty($new[$end_date_field_short_name]))
-				{
-					// We submitted a custom end date via SafeCracker, fix it
-					$new[$end_date_field_short_name] = substr($new[$end_date_field_short_name], 0, 10) . ' 12:00:00 AM';
-				}				
-			}
-		
-			// Set the expiration date
-			
-			if(isset($end_date_field_name) && isset($new[$end_date_field_name]) && !empty($new[$end_date_field_name]))
-			{ 
-				// We're using an end date via the CP
-				$new['expiration_date'] = substr($new[$end_date_field_name], 0, 10) . ' 11:59:59 PM';
-			}
-			elseif(isset($end_date_field_short_name) && isset($new[$end_date_field_short_name]) && !empty($new[$end_date_field_short_name]))
-			{ 
-				// We're using an end date via SafeCracker
-				$new['expiration_date'] = substr($new[$end_date_field_short_name], 0, 10) . ' 11:59:59 PM';
-			}
-			else
-			{ 
-				if(isset($start_date_field_name) && isset($new[$start_date_field_name]) && !empty($new[$start_date_field_name]))
-				{
-					// We're using a custom start date via the CP
-					$new['expiration_date'] = substr($new[$start_date_field_name], 0, 10) . ' 11:59:59 PM';
-				}
-				elseif(isset($start_date_field_short_name) && isset($new[$start_date_field_short_name]) && !empty($new[$start_date_field_short_name]))
-				{
-					// We're using a custom start date via SafeCracker
-					$new['expiration_date'] = substr($new[$start_date_field_short_name], 0, 10) . ' 11:59:59 PM';
-				}
-				else
-				{
-					// We're using the entry_date
-					$new['expiration_date'] = substr($new['entry_date'], 0, 10) . ' 11:59:59 PM';
-				}
-			}
-			
-			// Clone start date to entry date
-			
-			if($settings['clone_date'][$key] == 'y')
-			{
-				if(isset($start_date_field_name) && isset($new[$start_date_field_name]) && !empty($new[$start_date_field_name]))
-				{
-					// We're using a custom start date via the CP
-					$new['entry_date'] = (strlen($new[$start_date_field_name]) == 10) ? $new[$start_date_field_name].' 12:00:00 AM' : $new[$start_date_field_name];
-				}
-				elseif(isset($start_date_field_short_name) && isset($new[$start_date_field_short_name]) && !empty($new[$start_date_field_short_name]))
-				{
-					// We're using a custom start date via SafeCracker
-					$new['entry_date'] = (strlen($new[$start_date_field_short_name]) == 10) ? $new[$start_date_field_short_name].' 12:00:00 AM' : $new[$start_date_field_short_name];
-				}
-			}
-			
-			// Revert DropDate fields back to their original posted states
-			// (Or DropDate won't validate them nor know what to do with them)
-			
-			if(isset($start_date_field_name) && $this->is_dropdate($this->EE->input->post($start_date_field_name)))
-			{
-				unset($new[$start_date_field_name]);
-			}
-			if(isset($start_date_field_short_name) && $this->is_dropdate($this->EE->input->post($start_date_field_short_name)))
-			{
-				unset($new[$start_date_field_short_name]);
-			}
-			if(isset($end_date_field_name) && $this->is_dropdate($this->EE->input->post($end_date_field_name)))
-			{
-				unset($new[$end_date_field_name]);
-			}
-			if(isset($end_date_field_short_name) && $this->is_dropdate($this->EE->input->post($end_date_field_short_name)))
-			{
-				unset($new[$end_date_field_short_name]);
-			}
-			
-			// Update different arrays based on which hook is used
-			
+			$this->_revert_dropdate();
+						
 			switch($hook)
 			{
 				// Control panel submission
 				case 'entry_submission_start' : 
-					foreach($new as $k => $v)
+					foreach($this->new_data as $k => $v)
 					{
 						$this->EE->api_channel_entries->data[$k] = $v;					
 					}
@@ -384,7 +233,7 @@ class Eevent_helper_ext
 					
 				// SafeCracker submission
 				case 'safecracker_submit_entry_start' : 
-					foreach($new as $k => $v)
+					foreach($this->new_data as $k => $v)
 					{
 						$_POST[$k] = $v;					
 					}
@@ -394,10 +243,88 @@ class Eevent_helper_ext
 		}
 	}
 	
-	
-	function prepare_date_field($date)
+
+	function _set_basics()
 	{
-		if($this->is_dropdate($date))
+		if(isset($_POST['entry_date']) && !empty($_POST['entry_date']))
+		{
+			$this->new_data['entry_date'] = $_POST['entry_date'];
+		}
+		else
+		{
+			$this->new_data['entry_date'] = $this->EE->localize->set_human_time();
+		}
+		if(isset($_POST['expiration_date']) && !empty($_POST['expiration_date']))
+		{
+			$this->new_data['expiration_date'] = $_POST['expiration_date'];
+		}
+	}
+	
+	
+	function _check_start_date($key, $custom_fields)
+	{
+		if($this->settings['start_date_field'][$key] != 'entry_date')
+		{
+			// We're using a custom start date
+			$this->sd_id = 'field_id_'.$this->settings['start_date_field'][$key];
+			if(is_array($custom_fields))
+			{
+				// We're coming from SafeCracker
+				foreach($custom_fields as $field_name => $attributes)
+				{
+					if($attributes['field_id'] == $this->settings['start_date_field'][$key])
+					{
+						$this->debug_messages[] = 'The Start Date&rsquo;s field name is '.$field_name.'.';
+						$this->sd_name = $field_name;
+					}
+				}
+			}
+		}
+		
+		if(isset($this->sd_id) && isset($_POST[$this->sd_id]) && !empty($_POST[$this->sd_id]))
+		{
+			$this->new_data[$this->sd_id] = $this->_prepare_date_field($_POST[$this->sd_id]);
+		}
+		
+		if(isset($this->sd_name) && isset($_POST[$this->sd_name]) && !empty($_POST[$this->sd_name]))
+		{
+			$this->new_data[$this->sd_name] = $this->_prepare_date_field($_POST[$this->sd_name]);
+		}
+	}
+
+
+	function _check_end_date($key, $custom_fields)
+	{
+		if($this->settings['end_date_field'][$key] != 'none')
+		{
+			$this->ed_id = 'field_id_'.$this->settings['end_date_field'][$key];
+			if(is_array($custom_fields))
+			{
+				foreach($custom_fields as $field_name => $attributes)
+				{
+					if($attributes['field_id'] == $this->settings['end_date_field'][$key])
+					{
+						$this->ed_name = $field_name;
+					}
+				}
+			}
+		}
+		
+		if(isset($this->ed_id) && isset($_POST[$this->ed_id]) && !empty($_POST[$this->ed_id]))
+		{
+			$this->new_data[$this->ed_id] = $this->_prepare_date_field($_POST[$this->ed_id]);
+		}
+		
+		if(isset($this->ed_name) && isset($_POST[$this->ed_name]) && !empty($_POST[$this->ed_name]))
+		{
+			$this->new_data[$this->ed_name] = $this->_prepare_date_field($_POST[$this->ed_name]);
+		}
+	}
+		
+	
+	function _prepare_date_field($date)
+	{
+		if($this->_is_dropdate($date))
 		{
 			if(array_search('0', $date) === FALSE)
 			{
@@ -418,51 +345,144 @@ class Eevent_helper_ext
 	}
 	
 	
-	function is_dropdate($date)
+	function _is_dropdate($date)
 	{
 		if(is_array($date) && count($date) == 3)
 		{
 			return TRUE;
 		}
 	}
-
-
-	function is_event_channel($channel_id)
+	
+	
+	function _set_midnight()
 	{
+		// Zero the appropriate start date
+		if(isset($this->sd_id) && isset($this->new_data[$this->sd_id]) && !empty($this->new_data[$this->sd_id]))
+		{
+			// We submitted a custom start date via the CP, fix it
+			$this->new_data[$this->sd_id]= substr($this->new_data[$this->sd_id], 0, 10) . ' 12:00:00 AM';
+		}
+		elseif(isset($this->sd_name) && isset($this->new_data[$this->sd_name]) && !empty($this->new_data[$this->sd_name]))
+		{
+			// We submitted a custom start date via SafeCracker, fix it
+			$this->new_data[$this->sd_name]= substr($this->new_data[$this->sd_name], 0, 10) . ' 12:00:00 AM';
+		}
+		else
+		{
+			// Fix the entry date instead
+			$this->new_data['entry_date'] = substr($this->new_data['entry_date'], 0, 10) . ' 12:00:00 AM';
+		}
+		
+		// Zero the end date if applicable
+		if(isset($this->ed_id) && isset($this->new_data[$this->ed_id]) && !empty($this->new_data[$this->ed_id]))
+		{
+			// We submitted a custom end date via the CP, fix it
+			$this->new_data[$this->ed_id] = substr($this->new_data[$this->ed_id], 0, 10) . ' 12:00:00 AM';
+		}
+		if(isset($this->ed_name) && isset($this->new_data[$this->ed_name]) && !empty($this->new_data[$this->ed_name]))
+		{
+			// We submitted a custom end date via SafeCracker, fix it
+			$this->new_data[$this->ed_name] = substr($this->new_data[$this->ed_name], 0, 10) . ' 12:00:00 AM';
+		}				
+	}
+
+
+	function _set_expiry()
+	{
+		if(isset($this->ed_id) && isset($this->new_data[$this->ed_id]) && !empty($this->new_data[$this->ed_id]))
+		{ 
+			// We're using an end date via the CP
+			$this->new_data['expiration_date'] = substr($this->new_data[$this->ed_id], 0, 10) . ' 11:59:59 PM';
+		}
+		elseif(isset($this->ed_name) && isset($this->new_data[$this->ed_name]) && !empty($this->new_data[$this->ed_name]))
+		{ 
+			// We're using an end date via SafeCracker
+			$this->new_data['expiration_date'] = substr($this->new_data[$this->ed_name], 0, 10) . ' 11:59:59 PM';
+		}
+		else
+		{ 
+			if(isset($this->sd_id) && isset($this->new_data[$this->sd_id]) && !empty($this->new_data[$this->sd_id]))
+			{
+				// We're using a custom start date via the CP
+				$this->new_data['expiration_date'] = substr($this->new_data[$this->sd_id], 0, 10) . ' 11:59:59 PM';
+			}
+			elseif(isset($this->sd_name) && isset($this->new_data[$this->sd_name]) && !empty($this->new_data[$this->sd_name]))
+			{
+				// We're using a custom start date via SafeCracker
+				$this->new_data['expiration_date'] = substr($this->new_data[$this->sd_name], 0, 10) . ' 11:59:59 PM';
+			}
+			else
+			{
+				// We're using the entry_date
+				$this->new_data['expiration_date'] = substr($this->new_data['entry_date'], 0, 10) . ' 11:59:59 PM';
+			}
+		}	
+	}
+	
+	
+	function _clone_start_date()
+	{
+		if(isset($this->sd_id) && isset($this->new_data[$this->sd_id]) && !empty($this->new_data[$this->sd_id]))
+		{
+			// We're using a custom start date via the CP
+			$this->new_data['entry_date'] = (strlen($this->new_data[$this->sd_id]) == 10) ? $this->new_data[$this->sd_id].' 12:00:00 AM' : $this->new_data[$this->sd_id];
+		}
+		elseif(isset($this->sd_name) && isset($this->new_data[$this->sd_name]) && !empty($this->new_data[$this->sd_name]))
+		{
+			// We're using a custom start date via SafeCracker
+			$this->new_data['entry_date'] = (strlen($this->new_data[$this->sd_name]) == 10) ? $this->new_data[$this->sd_name].' 12:00:00 AM' : $this->new_data[$this->sd_name];
+		}
+	}
+	
+	
+	function _revert_dropdate()
+	{
+		/*
+			Revert DropDate fields back to their original posted states
+			(Or DropDate won't validate them nor know what to do with them)
+		*/
+		if(isset($this->sd_id) && $this->_is_dropdate($this->EE->input->post($this->sd_id)))
+		{
+			unset($this->new_data[$this->sd_id]);
+		}
+		if(isset($this->sd_name) && $this->_is_dropdate($this->EE->input->post($this->sd_name)))
+		{
+			unset($this->new_data[$this->sd_name]);
+		}
+		if(isset($this->ed_id) && $this->_is_dropdate($this->EE->input->post($this->ed_id)))
+		{
+			unset($this->new_data[$this->ed_id]);
+		}
+		if(isset($this->ed_name) && $this->_is_dropdate($this->EE->input->post($this->ed_name)))
+		{
+			unset($this->new_data[$this->ed_name]);
+		}	
+	}
+
+
+	function _is_event_channel($channel_id)
+	{
+		/*
+			Return the array key for this channel's settings
+			(if it is indeed an event channel).
+		*/
+		
 		// Get current site ID
 		$site_id = $this->EE->config->item('site_id');
-
-		// Get settings
-		$settings = $this->get_settings(TRUE);
 		
 		// Have we saved our settings for this site?
-		if(array_key_exists($site_id, $settings))
+		if(array_key_exists($site_id, $this->settings))
 		{
 			/*
 				Find which index in the array we want to take our settings from.
 				(Will return FALSE if no settings for this channel.)
 			*/
-			return array_search($channel_id, $settings[$site_id]['event_channel']);
+			return array_search($channel_id, $this->settings[$site_id]['event_channel']);
 		}
 		else
 		{
 			return FALSE;
 		}
-	}		
-
-	
-	function entry_submission_start($channel_id, $autosave)
-	{
-		if($autosave == FALSE)
-		{
-			$this->process_dates($channel_id, 'entry_submission_start');
-		}
-	}
-	
-	
-	function safecracker_submit_entry_start($SC)
-	{
-		$this->process_dates($SC->channel['channel_id'], 'safecracker_submit_entry_start', $SC->custom_fields);
 	}
 	
 	
@@ -513,7 +533,6 @@ class Eevent_helper_ext
 	    {
 		    $this->EE->db->query($this->EE->db->insert_string('exp_extensions',
 		    	array(
-					'extension_id' => '',
 			        'class'        => ucfirst(get_class($this)),
 			        'method'       => $hook,
 			        'hook'         => $hook,

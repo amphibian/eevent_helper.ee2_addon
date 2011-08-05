@@ -9,6 +9,7 @@ $lang = array(
 	'none' => 'None',
 	'clone_date' => 'Clone custom Start Date to Entry Date?',
 	'midnight' => 'Set times to midnight?',
+	'set_expiry' => 'Set Expiration Date to 23:59?',
 	'yes' => 'Yes',
 	'no' => 'No',
 	'add_channel' => 'Add another events channel',
