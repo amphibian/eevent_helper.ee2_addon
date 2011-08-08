@@ -274,7 +274,6 @@ class Eevent_helper_ext
 				{
 					if($attributes['field_id'] == $this->settings['start_date_field'][$key])
 					{
-						$this->debug_messages[] = 'The Start Date&rsquo;s field name is '.$field_name.'.';
 						$this->sd_name = $field_name;
 					}
 				}
