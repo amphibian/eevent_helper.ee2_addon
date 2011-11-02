@@ -23,7 +23,7 @@ class Eevent_helper_ft extends EE_Fieldtype {
 
 	var $info = array(
 		'name'		=> 'Event Helper Date',
-		'version'	=> '1.0.3'
+		'version'	=> '2.1'
 	);
 
 	var $has_array_data = FALSE;
@@ -79,7 +79,7 @@ class Eevent_helper_ft extends EE_Fieldtype {
 		{
 			if(strlen($field_data) == 10 && is_numeric($field_data))
 			{
-				$date = substr($this->EE->localize->set_human_time($field_data, FALSE), 0, 10);
+				$date = $this->EE->localize->decode_date('%Y-%m-%d', $field_data);
 			}
 		}
 
