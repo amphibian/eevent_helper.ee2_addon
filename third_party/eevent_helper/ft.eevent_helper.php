@@ -23,7 +23,7 @@ class Eevent_helper_ft extends EE_Fieldtype {
 
 	var $info = array(
 		'name'		=> 'Event Helper Date',
-		'version'	=> '2.1'
+		'version'	=> '2.1.1'
 	);
 
 	var $has_array_data = FALSE;
@@ -47,6 +47,12 @@ class Eevent_helper_ft extends EE_Fieldtype {
 		}
 		return $this->EE->localize->convert_human_date_to_gmt($data);
 	}
+	
+	
+	function save_cell($data)
+	{
+		return $this->save($data);
+	}
 
 
 	function validate($data)
@@ -61,41 +67,70 @@ class Eevent_helper_ft extends EE_Fieldtype {
 			return $this->EE->lang->line('incorrect_eh_date_formatting');
 		}
 	}
+	
+	
+	function validate_cell($data)
+	{
+		return $this->validate($data);
+	}
 
 
 	function display_field($field_data)
 	{
-		$date = '';
-		$date_field = $this->field_name;
-		if (isset($_POST[$date_field]) && ! is_numeric($_POST[$date_field]))
+		return $this->_display($field_data, $this->field_name, 'field');
+	}
+	
+	
+	function display_cell($field_data)
+	{
+		return $this->_display($field_data, $this->cell_name, 'cell');
+	}
+	
+	
+	function _display($field_data, $field_name, $context)
+	{
+		
+		if(isset($_POST[$this->field_name]))
 		{
-			// There's a string in $_POST, probably had a validation error
-			if ($_POST[$date_field])
- 			{
- 				$date = $_POST[$date_field];
-			}
+			$date = $field_data;
 		}
 		else
 		{
-			if(strlen($field_data) == 10 && is_numeric($field_data))
+			if(is_numeric($field_data) && $field_data != '0')
 			{
 				$date = $this->EE->localize->decode_date('%Y-%m-%d', $field_data);
 			}
+			else
+			{
+				$date = '';
+			}
+		}		
+
+		if($context == 'field')
+		{
+			$this->EE->javascript->output('
+				$(".event_helper_date").datepicker({ dateFormat: "yy-mm-dd" });
+				$("a.eh_clear_date").click(function(){$(this).prev("input").val(""); return false;});
+			');
+		}
+		else
+		{
+			$this->EE->javascript->output('
+				Matrix.bind("eevent_helper", "display", function(cell)
+				{
+					$(".event_helper_date").datepicker({ dateFormat: "yy-mm-dd" });
+					$("a.eh_clear_date").click(function(){$(this).prev("input").val(""); return false;});
+				});
+			');
 		}
 
-		$this->EE->javascript->output('
-			$("#'.$this->field_name.'").datepicker({ dateFormat: "yy-mm-dd" });
-			$("a.eh_clear_date").click(function(){$(this).prev("input").val(""); return false;});
-		');
-
 		$r = form_input(array(
-			'name'	=> $this->field_name,
-			'id'	=> $this->field_name,
+			'name'	=> $field_name,
 			'value'	=> $date,
-			'class'	=> 'field'
+			'class'	=> 'field event_helper_date'
 		));
 		$r .= NBS.NBS.'<a href="#" class="eh_clear_date">'.$this->EE->lang->line('clear').'</a>';
-		return $r;
+		return $r;	
 	}
 	
 	
