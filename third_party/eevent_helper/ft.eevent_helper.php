@@ -23,7 +23,7 @@ class Eevent_helper_ft extends EE_Fieldtype {
 
 	var $info = array(
 		'name'		=> 'Event Helper Date',
-		'version'	=> '2.1.1'
+		'version'	=> '2.1.2'
 	);
 
 	var $has_array_data = FALSE;
@@ -165,5 +165,25 @@ class Eevent_helper_ft extends EE_Fieldtype {
 			'default'		=> 0
 			);
 		return $fields;
-	}	
+	}
+
+	
+	function zenbu_display($entry_id, $channel_id, $data, $table_data = array(), $field_id, $settings, $rules = array())
+	{
+		$format = (isset($settings['setting'][$channel_id]['extra_options']['field_'.$field_id]['format'])) ? $settings['setting'][$channel_id]['extra_options']['field_'.$field_id]['format'] : '%Y-%m-%d';
+		return (!empty($data)) ? $this->EE->localize->decode_date($format, $data) : '';
+
+	}
+	
+	
+	function zenbu_field_extra_settings($table_col, $channel_id, $extra_options)
+	{
+		$value = (isset($extra_options['format'])) ? $extra_options['format'] : '';
+		$settings = array(
+			'format' => form_label($this->EE->lang->line('date_format').NBS.form_input('settings['.$channel_id.']['.$table_col.'][format]', $value))
+		);
+		return $settings;
+	}
+
+		
 }
