@@ -23,7 +23,7 @@ class Eevent_helper_ft extends EE_Fieldtype {
 
 	var $info = array(
 		'name'		=> 'Event Helper Date',
-		'version'	=> '2.1.2'
+		'version'	=> '2.1.4'
 	);
 
 	var $has_array_data = FALSE;
@@ -104,6 +104,17 @@ class Eevent_helper_ft extends EE_Fieldtype {
 			{
 				$date = '';
 			}
+<<<<<<< HEAD
+=======
+		}
+
+		if($context == 'field')
+		{
+			$this->EE->javascript->output('
+				$(".event_helper_date").datepicker({ dateFormat: "yy-mm-dd" });
+				$("a.eh_clear_date").click(function(){$(this).prev("input").val(""); return false;});
+			');
+>>>>>>> Update version
 		}
 
 		// Include the JS if we haven't already

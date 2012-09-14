@@ -23,7 +23,7 @@ class Eevent_helper_ext
 {
 	var $settings = array();
 	var $name = 'Event Helper';
-	var $version = '2.1.2';
+	var $version = '2.1.4';
 	var $description = 'Automatically sets the expiration date for event entries, and more.';
 	var $settings_exist = 'y';
 	var $docs_url = 'http://github.com/amphibian/eevent_helper.ee2_addon';
@@ -97,18 +97,18 @@ class Eevent_helper_ext
 		$vars['end_fields']['none'] = $this->EE->lang->line('none');
 		
 		// Get a list of date fields for the current site
-		$fields = $this->EE->db->query("SELECT c.channel_title, f.field_id, f.field_label 
-			FROM exp_channels as c, exp_channel_fields as f 
-			WHERE c.field_group = f.group_id 
-			AND c.site_id = '".$this->EE->db->escape_str($site_id)."' 
+		$fields = $this->EE->db->query("SELECT g.group_name, f.field_id, f.field_label 
+			FROM exp_field_groups g, exp_channel_fields f 
+			WHERE g.group_id = f.group_id 
+			AND g.site_id = '".$this->EE->db->escape_str($site_id)."' 
 			AND f.field_type IN('date','eevent_helper','dropdate') 
-			ORDER BY c.channel_title ASC,f.field_order ASC");
+			ORDER BY g.group_name ASC,f.field_order ASC");
 			
 		foreach($fields->result_array() as $value)
 		{
 			extract($value);
-			$vars['start_fields'][$field_id] = $channel_title . ': ' . $field_label;
-			$vars['end_fields'][$field_id] = $channel_title . ': ' . $field_label;
+			$vars['start_fields'][$field_id] = $group_name . ': ' . $field_label;
+			$vars['end_fields'][$field_id] = $group_name . ': ' . $field_label;
 		}
 		
 		// Array for boolean settings
