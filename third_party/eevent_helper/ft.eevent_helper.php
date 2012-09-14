@@ -77,13 +77,13 @@ class Eevent_helper_ft extends EE_Fieldtype {
 
 	function display_field($field_data)
 	{
-		return $this->_display($field_data, $this->field_name, 'field');
+		return $this->_display($field_data, $this->field_name);
 	}
 	
 	
 	function display_cell($field_data)
 	{
-		return $this->_display($field_data, $this->cell_name, 'cell');
+		return $this->_display($field_data, $this->cell_name);
 	}
 	
 	
@@ -104,17 +104,6 @@ class Eevent_helper_ft extends EE_Fieldtype {
 			{
 				$date = '';
 			}
-<<<<<<< HEAD
-=======
-		}
-
-		if($context == 'field')
-		{
-			$this->EE->javascript->output('
-				$(".event_helper_date").datepicker({ dateFormat: "yy-mm-dd" });
-				$("a.eh_clear_date").click(function(){$(this).prev("input").val(""); return false;});
-			');
->>>>>>> Update version
 		}
 
 		// Include the JS if we haven't already
