@@ -104,24 +104,27 @@ class Eevent_helper_ft extends EE_Fieldtype {
 			{
 				$date = '';
 			}
-		}		
-
-		if($context == 'field')
-		{
-			$this->EE->javascript->output('
-				$(".event_helper_date").datepicker({ dateFormat: "yy-mm-dd" });
-				$("a.eh_clear_date").click(function(){$(this).prev("input").val(""); return false;});
-			');
 		}
-		else
+
+		// Include the JS if we haven't already
+		if ( ! isset($this->EE->session->cache['eevent_helper']['added_js']))
 		{
 			$this->EE->javascript->output('
-				Matrix.bind("eevent_helper", "display", function(cell)
-				{
-					$(".event_helper_date").datepicker({ dateFormat: "yy-mm-dd" });
-					$("a.eh_clear_date").click(function(){$(this).prev("input").val(""); return false;});
+				function initEventHelperFields(context) {
+					$(".event_helper_date", context).datepicker({ dateFormat: "yy-mm-dd" });
+					$("a.eh_clear_date", context).click(function(){$(this).prev("input").val(""); return false;});
+				}
+
+				Matrix.bind("eevent_helper", "display", function(cell) {
+					initEventHelperFields(cell.dom.$td);
+				});
+
+				$(document).ready(function() {
+					initEventHelperFields();
 				});
 			');
+
+			$this->EE->session->cache['eevent_helper']['added_js'] = TRUE;
 		}
 
 		$r = form_input(array(
