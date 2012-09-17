@@ -87,7 +87,7 @@ class Eevent_helper_ft extends EE_Fieldtype {
 	}
 	
 	
-	function _display($field_data, $field_name, $context)
+	function _display($field_data, $field_name)
 	{
 		
 		if(isset($_POST[$this->field_name]))
