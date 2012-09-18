@@ -77,17 +77,17 @@ class Eevent_helper_ft extends EE_Fieldtype {
 
 	function display_field($field_data)
 	{
-		return $this->_display($field_data, $this->field_name);
+		return $this->_display($field_data, $this->field_name, false);
 	}
 	
 	
 	function display_cell($field_data)
 	{
-		return $this->_display($field_data, $this->cell_name);
+		return $this->_display($field_data, $this->cell_name, true);
 	}
 	
 	
-	function _display($field_data, $field_name)
+	function _display($field_data, $field_name, $matrix = false)
 	{
 		
 		if(isset($_POST[$this->field_name]))
@@ -109,21 +109,25 @@ class Eevent_helper_ft extends EE_Fieldtype {
 		// Include the JS if we haven't already
 		if ( ! isset($this->EE->session->cache['eevent_helper']['added_js']))
 		{
-			$this->EE->javascript->output('
+			$js = '
 				function initEventHelperFields(context) {
 					$(".event_helper_date", context).datepicker({ dateFormat: "yy-mm-dd" });
 					$("a.eh_clear_date", context).click(function(){$(this).prev("input").val(""); return false;});
 				}
-
-				Matrix.bind("eevent_helper", "display", function(cell) {
-					initEventHelperFields(cell.dom.$td);
-				});
-
+				
 				$(document).ready(function() {
 					initEventHelperFields();
-				});
-			');
-
+				});';
+				
+			if($matrix)
+			{
+				$js = '
+					Matrix.bind("eevent_helper", "display", function(cell) {
+						initEventHelperFields(cell.dom.$td);
+					});';			
+			}
+			
+			$this->EE->javascript->output($js);
 			$this->EE->session->cache['eevent_helper']['added_js'] = TRUE;
 		}
 
