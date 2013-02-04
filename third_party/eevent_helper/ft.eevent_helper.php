@@ -23,7 +23,7 @@ class Eevent_helper_ft extends EE_Fieldtype {
 
 	var $info = array(
 		'name'		=> 'Event Helper Date',
-		'version'	=> '2.1.4'
+		'version'	=> '2.1.5'
 	);
 
 	var $has_array_data = FALSE;
@@ -121,7 +121,7 @@ class Eevent_helper_ft extends EE_Fieldtype {
 				
 			if($matrix)
 			{
-				$js = '
+				$js .= '
 					Matrix.bind("eevent_helper", "display", function(cell) {
 						initEventHelperFields(cell.dom.$td);
 					});';			

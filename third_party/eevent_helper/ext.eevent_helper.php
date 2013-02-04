@@ -23,7 +23,7 @@ class Eevent_helper_ext
 {
 	var $settings = array();
 	var $name = 'Event Helper';
-	var $version = '2.1.4';
+	var $version = '2.1.5';
 	var $description = 'Automatically sets the expiration date for event entries, and more.';
 	var $settings_exist = 'y';
 	var $docs_url = 'http://github.com/amphibian/eevent_helper.ee2_addon';
@@ -195,8 +195,9 @@ class Eevent_helper_ext
 	{
 
 		$key = $this->_is_event_channel($channel_id);
-				
-		if($key !== FALSE)
+		
+		// REQ == 'CP' is checked because we can't work with programatically-loaded Channel Entries API calls		
+		if($key !== FALSE && ($hook == 'safecracker_submit_entry_start' || REQ == 'CP') )
 		{							
 			$this->settings = $this->get_settings();
 
