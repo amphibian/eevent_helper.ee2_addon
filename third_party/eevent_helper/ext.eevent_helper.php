@@ -23,7 +23,7 @@ class Eevent_helper_ext
 {
 	var $settings = array();
 	var $name = 'Event Helper';
-	var $version = '2.1.5';
+	var $version = '2.1.6';
 	var $description = 'Automatically sets the expiration date for event entries, and more.';
 	var $settings_exist = 'y';
 	var $docs_url = 'http://github.com/amphibian/eevent_helper.ee2_addon';
@@ -41,6 +41,9 @@ class Eevent_helper_ext
 	{
 	    $this->settings = $settings;
 	    $this->EE =& get_instance();
+	    
+	    // Backwards-compatibility with pre-2.6 Localize class
+		$this->human_time_fn = (version_compare(APP_VER, '2.6', '>=')) ? 'human_time' : 'set_human_time';
 	}
 	
 		
@@ -253,7 +256,7 @@ class Eevent_helper_ext
 		}
 		else
 		{
-			$this->new_data['entry_date'] = $this->EE->localize->set_human_time();
+			$this->new_data['entry_date'] = $this->EE->localize->{$this->human_time_fn}();
 		}
 		if(isset($_POST['expiration_date']) && !empty($_POST['expiration_date']))
 		{

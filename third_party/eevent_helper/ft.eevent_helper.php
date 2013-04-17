@@ -23,7 +23,7 @@ class Eevent_helper_ft extends EE_Fieldtype {
 
 	var $info = array(
 		'name'		=> 'Event Helper Date',
-		'version'	=> '2.1.5'
+		'version'	=> '2.1.6'
 	);
 
 	var $has_array_data = FALSE;
@@ -31,7 +31,11 @@ class Eevent_helper_ft extends EE_Fieldtype {
 	
 	function Eevent_helper_ft()
 	{
-		parent::EE_Fieldtype();
+		EE_Fieldtype::__construct();
+		
+		// Backwards-compatibility with pre-2.6 Localize class
+		$this->format_date_fn = (version_compare(APP_VER, '2.6', '>=')) ? 'format_date' : 'decode_date';
+		$this->string_to_timestamp_fn = (version_compare(APP_VER, '2.6', '>=')) ? 'string_to_timestamp' : 'convert_human_date_to_gmt';
 	}
 
 	
@@ -45,7 +49,7 @@ class Eevent_helper_ft extends EE_Fieldtype {
 		{
 			$data = $data.' 12:00:00 AM';
 		}
-		return $this->EE->localize->convert_human_date_to_gmt($data);
+		return $this->EE->localize->{$this->string_to_timestamp_fn}($data);
 	}
 	
 	
@@ -98,7 +102,7 @@ class Eevent_helper_ft extends EE_Fieldtype {
 		{
 			if(is_numeric($field_data) && $field_data != '0')
 			{
-				$date = $this->EE->localize->decode_date('%Y-%m-%d', $field_data);
+				$date = $this->EE->localize->{$this->format_date_fn}('%Y-%m-%d', $field_data);
 			}
 			else
 			{
@@ -150,7 +154,7 @@ class Eevent_helper_ft extends EE_Fieldtype {
 	function replace_tag($data, $params = array(), $tagdata = FALSE)
 	{
 		$format = (isset($params['format'])) ? $params['format'] : '%U';
-		return $this->EE->localize->decode_date($format, $data);
+		return $this->EE->localize->{$this->format_date_fn}($format, $data);
 	}
 
 
@@ -178,7 +182,7 @@ class Eevent_helper_ft extends EE_Fieldtype {
 	function zenbu_display($entry_id, $channel_id, $data, $table_data = array(), $field_id, $settings, $rules = array())
 	{
 		$format = (isset($settings['setting'][$channel_id]['extra_options']['field_'.$field_id]['format'])) ? $settings['setting'][$channel_id]['extra_options']['field_'.$field_id]['format'] : '%Y-%m-%d';
-		return (!empty($data)) ? $this->EE->localize->decode_date($format, $data) : '';
+		return (!empty($data)) ? $this->EE->localize->{$this->format_date_fn}($format, $data) : '';
 
 	}
 	
