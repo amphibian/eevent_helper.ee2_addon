@@ -23,7 +23,7 @@ class Eevent_helper_ext
 {
 	var $settings = array();
 	var $name = 'Event Helper';
-	var $version = '2.1.6';
+	var $version = '2.1.7';
 	var $description = 'Automatically sets the expiration date for event entries, and more.';
 	var $settings_exist = 'y';
 	var $docs_url = 'http://github.com/amphibian/eevent_helper.ee2_addon';
@@ -186,11 +186,18 @@ class Eevent_helper_ext
 		}
 	}
 	
+
 	
-	function safecracker_submit_entry_start($sc)
+	function channel_form_submit_entry_start($submission)
 	{
-		// print_r($sc); exit();
-		$this->_process_dates($sc->channel['channel_id'], 'safecracker_submit_entry_start', $sc->custom_fields);
+		$this->_process_dates($submission->channel['channel_id'], 'channel_form_submit_entry_start', $submission->custom_fields);
+	}	
+	
+	
+	// For pre-EE 2.7
+	function safecracker_submit_entry_start($submission)
+	{
+		$this->channel_form_submit_entry_start($submission);
 	}
 	
 	
@@ -200,7 +207,7 @@ class Eevent_helper_ext
 		$key = $this->_is_event_channel($channel_id);
 		
 		// REQ == 'CP' is checked because we can't work with programatically-loaded Channel Entries API calls		
-		if($key !== FALSE && ($hook == 'safecracker_submit_entry_start' || REQ == 'CP') )
+		if($key !== FALSE && ($hook == 'channel_form_submit_entry_start' || REQ == 'CP') )
 		{							
 			$this->settings = $this->get_settings();
 
@@ -235,8 +242,8 @@ class Eevent_helper_ext
 					}
 					break;
 					
-				// SafeCracker submission
-				case 'safecracker_submit_entry_start' : 
+				// Channel Form submission
+				case 'channel_form_submit_entry_start' : 
 					foreach($this->new_data as $k => $v)
 					{
 						$_POST[$k] = $v;					
@@ -529,6 +536,7 @@ class Eevent_helper_ext
 	    $hooks = array(
 	    	'entry_submission_start',
 	    	'safecracker_submit_entry_start',
+	    	'channel_form_submit_entry_start',
 	    	'cp_js_end'
 	    );
 	    
@@ -565,6 +573,23 @@ class Eevent_helper_ext
 						'class'        => ucfirst(get_class($this)),
 						'method'       => 'safecracker_submit_entry_start',
 						'hook'         => 'safecracker_submit_entry_start',
+						'settings'     => '',
+						'priority'     => 10,
+						'version'      => $this->version,
+						'enabled'      => "y"
+						)
+					)
+				);		
+		}
+
+		if($current <= '2.1.7')
+		{
+			$this->EE->db->query($this->EE->db->insert_string('exp_extensions',
+					array(
+						'extension_id' => '',
+						'class'        => ucfirst(get_class($this)),
+						'method'       => 'channel_form_submit_entry_start',
+						'hook'         => 'channel_form_submit_entry_start',
 						'settings'     => '',
 						'priority'     => 10,
 						'version'      => $this->version,

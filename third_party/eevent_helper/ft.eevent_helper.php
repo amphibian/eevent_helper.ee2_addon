@@ -23,7 +23,7 @@ class Eevent_helper_ft extends EE_Fieldtype {
 
 	var $info = array(
 		'name'		=> 'Event Helper Date',
-		'version'	=> '2.1.6'
+		'version'	=> '2.1.7'
 	);
 
 	var $has_array_data = FALSE;
@@ -37,14 +37,26 @@ class Eevent_helper_ft extends EE_Fieldtype {
 		$this->format_date_fn = (version_compare(APP_VER, '2.6', '>=')) ? 'format_date' : 'decode_date';
 		$this->string_to_timestamp_fn = (version_compare(APP_VER, '2.6', '>=')) ? 'string_to_timestamp' : 'convert_human_date_to_gmt';
 	}
+	
+	
+	function accepts_content_type($name)
+	{
+		return ($name == 'channel' || $name == 'grid');
+	}
 
 	
 	function save($data)
-	{
+	{	
+		// Timestamp already? (Likely via the API.)
+		if(is_int($data))
+		{
+			return $data;
+		}
+
 		/*
 			If the fieldtype is being used without the EH extension, add the time.
 			(The EH extension will have already appended the time.)
-		*/
+		*/		
 		if(strlen($data) == 10)
 		{
 			$data = $data.' 12:00:00 AM';
@@ -81,60 +93,83 @@ class Eevent_helper_ft extends EE_Fieldtype {
 
 	function display_field($field_data)
 	{
-		return $this->_display($field_data, $this->field_name, false);
+		return $this->_display($field_data, $this->field_name, 'channel');
+	}
+	
+	
+	function grid_display_field($field_data)
+	{
+		return $this->_display($field_data, $this->field_name, 'grid');
 	}
 	
 	
 	function display_cell($field_data)
 	{
-		return $this->_display($field_data, $this->cell_name, true);
+		return $this->_display($field_data, $this->cell_name, 'matrix');
 	}
 	
 	
-	function _display($field_data, $field_name, $matrix = false)
+	function _display($field_data, $field_name, $type)
 	{
-		
-		if(isset($_POST[$this->field_name]))
+
+		if(is_numeric($field_data))
 		{
-			$date = $field_data;
+			$date = ($field_data == 0) ? '' : $this->EE->localize->{$this->format_date_fn}('%Y-%m-%d', $field_data);
 		}
 		else
 		{
-			if(is_numeric($field_data) && $field_data != '0')
-			{
-				$date = $this->EE->localize->{$this->format_date_fn}('%Y-%m-%d', $field_data);
-			}
-			else
-			{
-				$date = '';
-			}
+			$date = $field_data;
 		}
 
-		// Include the JS if we haven't already
-		if ( ! isset($this->EE->session->cache['eevent_helper']['added_js']))
+		if($type == 'channel')
 		{
 			$js = '
-				function initEventHelperFields(context) {
-					$(".event_helper_date", context).datepicker({ dateFormat: "yy-mm-dd" });
-					$("a.eh_clear_date", context).click(function(){$(this).prev("input").val(""); return false;});
-				}
-				
-				$(document).ready(function() {
-					initEventHelperFields();
+				$(document).ready(function()
+				{
+					$("input[name=\''.$this->field_name.'\']").datepicker({ dateFormat: "yy-mm-dd" });
+					$("a.eh_clear_date").click(function()
+					{
+						$(this).prev("input").val(""); return false;
+					});
 				});';
-				
-			if($matrix)
-			{
-				$js .= '
-					Matrix.bind("eevent_helper", "display", function(cell) {
-						initEventHelperFields(cell.dom.$td);
-					});';			
-			}
-			
-			$this->EE->javascript->output($js);
-			$this->EE->session->cache['eevent_helper']['added_js'] = TRUE;
+		}
+		
+		if($type == 'matrix' && ! isset($this->EE->session->cache['eevent_helper']['added_matrix_js']))
+		{		
+			$js = '
+				Matrix.bind("eevent_helper", "display", function(cell)
+				{
+					scope = cell.dom.$td;
+					$(".event_helper_date", scope).datepicker({ dateFormat: "yy-mm-dd" });
+					$("a.eh_clear_date", scope).click(function()
+					{
+						$(this).prev("input").val(""); return false;
+					});
+				});';			
+			$this->EE->session->cache['eevent_helper']['added_matrix_js'] = TRUE;
 		}
 
+		if($type == 'grid' && ! isset($this->EE->session->cache['eevent_helper']['added_grid_js']))
+		{				
+			$js = '
+				Grid.bind("eevent_helper", "display", function(cell)
+				{
+					console.log($.datepicker);
+					cell.find(".event_helper_date").datepicker({ dateFormat: "yy-mm-dd" });
+					cell.find("a.eh_clear_date").click(function()
+					{
+						$(this).prev("input").val(""); return false;
+					});
+				});';			
+			$this->EE->session->cache['eevent_helper']['added_grid_js'] = TRUE;
+		}
+			
+		
+		if(!empty($js))
+		{
+			$this->EE->javascript->output($js);
+		}
+		
 		$r = form_input(array(
 			'name'	=> $field_name,
 			'value'	=> $date,
