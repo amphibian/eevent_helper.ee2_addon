@@ -46,7 +46,13 @@ class Eevent_helper_ft extends EE_Fieldtype {
 
 	
 	function save($data)
-	{	
+	{
+		// field is empty
+		if (!$data)
+		{
+			return;
+		}
+
 		// Timestamp already? (Likely via the API.)
 		if(is_int($data))
 		{
@@ -61,7 +67,8 @@ class Eevent_helper_ft extends EE_Fieldtype {
 		{
 			$data = $data.' 12:00:00 AM';
 		}
-		return $this->EE->localize->{$this->string_to_timestamp_fn}($data);
+
+		return $this->EE->localize->string_to_timestamp($data);
 	}
 	
 	
