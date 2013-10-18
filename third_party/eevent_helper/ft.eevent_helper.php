@@ -68,7 +68,7 @@ class Eevent_helper_ft extends EE_Fieldtype {
 			$data = $data.' 12:00:00 AM';
 		}
 
-		return $this->EE->localize->string_to_timestamp($data);
+		return $this->EE->localize->{$this->string_to_timestamp_fn}($data);
 	}
 	
 	
