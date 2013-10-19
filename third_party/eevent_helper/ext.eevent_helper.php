@@ -203,7 +203,6 @@ class Eevent_helper_ext
 	
 	function _process_dates($channel_id, $hook, $custom_fields = '')
 	{
-
 		$key = $this->_is_event_channel($channel_id);
 		
 		// REQ == 'CP' is checked because we can't work with programatically-loaded Channel Entries API calls		
@@ -250,7 +249,6 @@ class Eevent_helper_ext
 					}
 					break;				
 			}
-
 		}
 	}
 	
@@ -409,24 +407,6 @@ class Eevent_helper_ext
 			// We're using an end date via SafeCracker
 			$this->new_data['expiration_date'] = substr($this->new_data[$this->ed_name], 0, 10) . ' 11:59:59 PM';
 		}
-		else
-		{ 
-			if(isset($this->sd_id) && isset($this->new_data[$this->sd_id]) && !empty($this->new_data[$this->sd_id]))
-			{
-				// We're using a custom start date via the CP
-				$this->new_data['expiration_date'] = substr($this->new_data[$this->sd_id], 0, 10) . ' 11:59:59 PM';
-			}
-			elseif(isset($this->sd_name) && isset($this->new_data[$this->sd_name]) && !empty($this->new_data[$this->sd_name]))
-			{
-				// We're using a custom start date via SafeCracker
-				$this->new_data['expiration_date'] = substr($this->new_data[$this->sd_name], 0, 10) . ' 11:59:59 PM';
-			}
-			else
-			{
-				// We're using the entry_date
-				$this->new_data['expiration_date'] = substr($this->new_data['entry_date'], 0, 10) . ' 11:59:59 PM';
-			}
-		}	
 	}
 	
 	
