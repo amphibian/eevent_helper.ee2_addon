@@ -23,7 +23,7 @@ class Eevent_helper_ft extends EE_Fieldtype {
 
 	var $info = array(
 		'name'		=> 'Event Helper Date',
-		'version'	=> '2.1.7'
+		'version'	=> '2.1.8'
 	);
 
 	var $has_array_data = FALSE;
@@ -47,6 +47,11 @@ class Eevent_helper_ft extends EE_Fieldtype {
 	
 	function save($data)
 	{	
+		if (empty($data))
+		{
+			return;
+		}
+		
 		// Timestamp already? (Likely via the API.)
 		if(is_int($data))
 		{
@@ -154,7 +159,6 @@ class Eevent_helper_ft extends EE_Fieldtype {
 			$js = '
 				Grid.bind("eevent_helper", "display", function(cell)
 				{
-					console.log($.datepicker);
 					cell.find(".event_helper_date").datepicker({ dateFormat: "yy-mm-dd" });
 					cell.find("a.eh_clear_date").click(function()
 					{
