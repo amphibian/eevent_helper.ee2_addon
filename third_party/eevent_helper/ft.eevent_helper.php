@@ -23,7 +23,7 @@ class Eevent_helper_ft extends EE_Fieldtype {
 
 	var $info = array(
 		'name'		=> 'Event Helper Date',
-		'version'	=> '2.1.9'
+		'version'	=> '2.2'
 	);
 
 	var $has_array_data = FALSE;
@@ -36,6 +36,10 @@ class Eevent_helper_ft extends EE_Fieldtype {
 		// Backwards-compatibility with pre-2.6 Localize class
 		$this->format_date_fn = (version_compare(APP_VER, '2.6', '>=')) ? 'format_date' : 'decode_date';
 		$this->string_to_timestamp_fn = (version_compare(APP_VER, '2.6', '>=')) ? 'string_to_timestamp' : 'convert_human_date_to_gmt';
+		
+		// Backwards-compatibility with pre-2.8 Localize class		
+		$this->date_format_ee = (version_compare(APP_VER, '2.8', '>=')) ? ee()->session->userdata('date_format', ee()->config->item('date_format')) : '%Y-%m-%d';
+		$this->date_format_js = (version_compare(APP_VER, '2.8', '>=')) ? $this->EE->localize->datepicker_format() : 'yy-mm-dd';
 	}
 	
 	
@@ -62,10 +66,7 @@ class Eevent_helper_ft extends EE_Fieldtype {
 			If the fieldtype is being used without the EH extension, add the time.
 			(The EH extension will have already appended the time.)
 		*/		
-		if(strlen($data) == 10)
-		{
-			$data = $data.' 12:00:00 AM';
-		}
+		$data.' 12:00:00 AM';
 		return $this->EE->localize->{$this->string_to_timestamp_fn}($data);
 	}
 	
@@ -78,7 +79,7 @@ class Eevent_helper_ft extends EE_Fieldtype {
 
 	function validate($data)
 	{
-		if($data == '' || preg_match('/[0-9]{4}-[0-9]{2}-[0-9]{2}/', $data) != FALSE)
+		if($data == '' || preg_match('/(\d{1,4}(\/|-)\d{1,2}(\/|-)\d{1,2})/', $data) != FALSE)
 		{
 			return TRUE;
 		}
@@ -119,7 +120,7 @@ class Eevent_helper_ft extends EE_Fieldtype {
 
 		if(is_numeric($field_data))
 		{
-			$date = ($field_data == 0) ? '' : $this->EE->localize->{$this->format_date_fn}('%Y-%m-%d', $field_data);
+			$date = ($field_data == 0) ? '' : $this->EE->localize->{$this->format_date_fn}($this->date_format_ee, $field_data);
 		}
 		else
 		{
@@ -131,7 +132,7 @@ class Eevent_helper_ft extends EE_Fieldtype {
 			$js = '
 				$(document).ready(function()
 				{
-					$("input[name=\''.$this->field_name.'\']").datepicker({ dateFormat: "yy-mm-dd" });
+					$("input[name=\''.$this->field_name.'\']").datepicker({ dateFormat: "'.$this->date_format_js.'" });
 					$("a.eh_clear_date").click(function()
 					{
 						$(this).prev("input").val(""); return false;
@@ -145,7 +146,7 @@ class Eevent_helper_ft extends EE_Fieldtype {
 				Matrix.bind("eevent_helper", "display", function(cell)
 				{
 					scope = cell.dom.$td;
-					$(".event_helper_date", scope).datepicker({ dateFormat: "yy-mm-dd" });
+					$(".event_helper_date", scope).datepicker({ dateFormat: "'.$this->date_format_js.'" });
 					$("a.eh_clear_date", scope).click(function()
 					{
 						$(this).prev("input").val(""); return false;
@@ -159,7 +160,7 @@ class Eevent_helper_ft extends EE_Fieldtype {
 			$js = '
 				Grid.bind("eevent_helper", "display", function(cell)
 				{
-					cell.find(".event_helper_date").datepicker({ dateFormat: "yy-mm-dd" });
+					cell.find(".event_helper_date").datepicker({ dateFormat: "'.$this->date_format_js.'" });
 					cell.find("a.eh_clear_date").click(function()
 					{
 						$(this).prev("input").val(""); return false;
@@ -220,7 +221,7 @@ class Eevent_helper_ft extends EE_Fieldtype {
 	
 	function zenbu_display($entry_id, $channel_id, $data, $table_data = array(), $field_id, $settings, $rules = array())
 	{
-		$format = (isset($settings['setting'][$channel_id]['extra_options']['field_'.$field_id]['format'])) ? $settings['setting'][$channel_id]['extra_options']['field_'.$field_id]['format'] : '%Y-%m-%d';
+		$format = (isset($settings['setting'][$channel_id]['extra_options']['field_'.$field_id]['format'])) ? $settings['setting'][$channel_id]['extra_options']['field_'.$field_id]['format'] : $this->date_format_ee;
 		return (!empty($data)) ? $this->EE->localize->{$this->format_date_fn}($format, $data) : '';
 
 	}
