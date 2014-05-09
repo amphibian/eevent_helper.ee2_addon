@@ -31,6 +31,7 @@ class Eevent_helper_ft extends EE_Fieldtype {
 	
 	function Eevent_helper_ft()
 	{
+		$this->EE =& get_instance();
 		EE_Fieldtype::__construct();
 		
 		// Backwards-compatibility with pre-2.6 Localize class
@@ -38,7 +39,7 @@ class Eevent_helper_ft extends EE_Fieldtype {
 		$this->string_to_timestamp_fn = (version_compare(APP_VER, '2.6', '>=')) ? 'string_to_timestamp' : 'convert_human_date_to_gmt';
 		
 		// Backwards-compatibility with pre-2.8 Localize class		
-		$this->date_format_ee = (version_compare(APP_VER, '2.8', '>=')) ? ee()->session->userdata('date_format', ee()->config->item('date_format')) : '%Y-%m-%d';
+		$this->date_format_ee = (version_compare(APP_VER, '2.8', '>=')) ? $this->EE->session->userdata('date_format', $this->EE->config->item('date_format')) : '%Y-%m-%d';
 		$this->date_format_js = (version_compare(APP_VER, '2.8', '>=')) ? $this->EE->localize->datepicker_format() : 'yy-mm-dd';
 	}
 	
