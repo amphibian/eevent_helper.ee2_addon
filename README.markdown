@@ -10,4 +10,4 @@ Event Helper also includes it's own date fieldtype, which provides a standard da
 
 Event helper will also remove the localization menu from any chosen native Date fields and automatically set its value to "Fixed".
 
-*Event Helper has been tested on ExpressionEngine 2.2+, and is compatible with SafeCracker and MSM setups.*.
+*Event Helper has been tested on ExpressionEngine 2.2+, and is compatible with Channel Forms, low Variables, and MSM.*.

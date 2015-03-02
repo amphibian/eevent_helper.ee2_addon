@@ -16,14 +16,14 @@
     Read the terms of the GNU General Public License
     at <http://www.gnu.org/licenses/>.
     
-    Copyright 2011 Derek Hogue
+    Copyright 2011-2015 Derek Hogue
 */
 
 class Eevent_helper_ext
 {
 	var $settings = array();
 	var $name = 'Event Helper';
-	var $version = '2.2';
+	var $version = '2.2.1';
 	var $description = 'Automatically sets the expiration date for event entries, and more.';
 	var $settings_exist = 'y';
 	var $docs_url = 'http://github.com/amphibian/eevent_helper.ee2_addon';

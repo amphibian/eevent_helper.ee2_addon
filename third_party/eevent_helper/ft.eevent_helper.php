@@ -16,23 +16,22 @@
     Read the terms of the GNU General Public License
     at <http://www.gnu.org/licenses/>.
     
-    Copyright 2011 Derek Hogue
+    Copyright 2011-2015 Derek Hogue
 */
 
 class Eevent_helper_ft extends EE_Fieldtype {
 
 	var $info = array(
 		'name'		=> 'Event Helper Date',
-		'version'	=> '2.2'
+		'version'	=> '2.2.1'
 	);
 
 	var $has_array_data = FALSE;
 
 	
-	function Eevent_helper_ft()
+	function __construct()
 	{
 		$this->EE =& get_instance();
-		EE_Fieldtype::__construct();
 		
 		// Backwards-compatibility with pre-2.6 Localize class
 		$this->format_date_fn = (version_compare(APP_VER, '2.6', '>=')) ? 'format_date' : 'decode_date';
@@ -77,6 +76,10 @@ class Eevent_helper_ft extends EE_Fieldtype {
 		return $this->save($data);
 	}
 
+	function save_var_field($data)
+	{
+		return $this->save($data);
+	}
 
 	function validate($data)
 	{
@@ -90,7 +93,6 @@ class Eevent_helper_ft extends EE_Fieldtype {
 			return $this->EE->lang->line('incorrect_eh_date_formatting');
 		}
 	}
-	
 	
 	function validate_cell($data)
 	{
@@ -115,10 +117,17 @@ class Eevent_helper_ft extends EE_Fieldtype {
 		return $this->_display($field_data, $this->cell_name, 'matrix');
 	}
 	
+	function display_var_field($field_data)
+	{
+		return $this->_display($field_data, $this->field_name, 'channel');
+	}
 	
 	function _display($field_data, $field_name, $type)
 	{
-
+		$this->EE->cp->add_js_script(array(
+			'ui' => 'datepicker'
+		));
+		
 		if(is_numeric($field_data))
 		{
 			$date = ($field_data == 0) ? '' : $this->EE->localize->{$this->format_date_fn}($this->date_format_ee, $field_data);
@@ -185,17 +194,17 @@ class Eevent_helper_ft extends EE_Fieldtype {
 		return $r;	
 	}
 	
-	
-	function pre_process($data)
-	{
-		return $data;
-	}
-	
 
 	function replace_tag($data, $params = array(), $tagdata = FALSE)
 	{
 		$format = (isset($params['format'])) ? $params['format'] : '%U';
 		return $this->EE->localize->{$this->format_date_fn}($format, $data);
+	}
+	
+	
+	function display_var_tag($data, $params = array(), $tagdata = FALSE)
+	{
+		return $this->replace_tag($data, $params, $tagdata);
 	}
 
 
