@@ -23,7 +23,7 @@ class Eevent_helper_ft extends EE_Fieldtype {
 
 	var $info = array(
 		'name'		=> 'Event Helper Date',
-		'version'	=> '2.2.1'
+		'version'	=> '2.2.2'
 	);
 
 	var $has_array_data = FALSE;
@@ -67,7 +67,9 @@ class Eevent_helper_ft extends EE_Fieldtype {
 			(The EH extension will have already appended the time.)
 		*/		
 		$data.' 12:00:00 AM';
-		return $this->EE->localize->{$this->string_to_timestamp_fn}($data);
+		return ( method_exists($this->EE->localize, 'get_date_format') ) ? 
+			$this->EE->localize->{$this->string_to_timestamp_fn}($data, true, $this->EE->localize->get_date_format()) : 
+			$this->EE->localize->{$this->string_to_timestamp_fn}($data);
 	}
 	
 	
@@ -83,7 +85,7 @@ class Eevent_helper_ft extends EE_Fieldtype {
 
 	function validate($data)
 	{
-		if($data == '' || preg_match('/(\d{1,4}(\/|-)\d{1,2}(\/|-)\d{1,2})/', $data) != FALSE)
+		if($data == '' || preg_match('/(\d{1,4}(\/|-)\d{1,2}(\/|-)\d{1,4})/', $data) != FALSE)
 		{
 			return TRUE;
 		}

@@ -23,7 +23,7 @@ class Eevent_helper_ext
 {
 	var $settings = array();
 	var $name = 'Event Helper';
-	var $version = '2.2.1';
+	var $version = '2.2.2';
 	var $description = 'Automatically sets the expiration date for event entries, and more.';
 	var $settings_exist = 'y';
 	var $docs_url = 'http://github.com/amphibian/eevent_helper.ee2_addon';
@@ -502,7 +502,7 @@ class Eevent_helper_ext
 	
 	function _extract_date($date)
 	{
-		if(preg_match('/(\d{1,4}(\/|-)\d{1,2}(\/|-)\d{1,2})/', $date, $match))
+		if(preg_match('/(\d{1,4}(\/|-)\d{1,2}(\/|-)\d{1,4})/', $date, $match))
 		{
 			return $match[1];
 		}
