@@ -23,23 +23,40 @@ class Eevent_helper_ft extends EE_Fieldtype {
 
 	var $info = array(
 		'name'		=> 'Event Helper Date',
-		'version'	=> '2.2.2'
+		'version'	=> '2.2.3'
 	);
 
 	var $has_array_data = FALSE;
+	
+	var $time = '';
 
 	
 	function __construct()
 	{
 		$this->EE =& get_instance();
 		
-		// Backwards-compatibility with pre-2.6 Localize class
+		/*
+			Backwards-compatibility with pre-2.6 Localize class
+		*/
 		$this->format_date_fn = (version_compare(APP_VER, '2.6', '>=')) ? 'format_date' : 'decode_date';
 		$this->string_to_timestamp_fn = (version_compare(APP_VER, '2.6', '>=')) ? 'string_to_timestamp' : 'convert_human_date_to_gmt';
+		$this->human_time_fn = (version_compare(APP_VER, '2.6', '>=')) ? 'human_time' : 'set_human_time';
 		
-		// Backwards-compatibility with pre-2.8 Localize class		
-		$this->date_format_ee = (version_compare(APP_VER, '2.8', '>=')) ? $this->EE->session->userdata('date_format', $this->EE->config->item('date_format')) : '%Y-%m-%d';
+		/*
+			Backwards-compatibility with pre-2.8 Localize class		
+		*/
 		$this->date_format_js = (version_compare(APP_VER, '2.8', '>=')) ? $this->EE->localize->datepicker_format() : 'yy-mm-dd';
+		
+		/*
+			Determine correct time formatting
+			as expected by the Localize class
+		*/
+		$time_format = $this->EE->session->userdata('time_format', $this->EE->config->item('time_format'));
+		$include_seconds = $this->EE->session->userdata('include_seconds', $this->EE->config->item('include_seconds'));
+		
+		$seconds = ($include_seconds == 'y') ? ':00' : '';
+		$this->time = ($time_format == 'us' || $time_format == '12') ? ' 12:00'.$seconds.' AM' : ' 00:00'.$seconds;
+
 	}
 	
 	
@@ -66,7 +83,11 @@ class Eevent_helper_ft extends EE_Fieldtype {
 			If the fieldtype is being used without the EH extension, add the time.
 			(The EH extension will have already appended the time.)
 		*/		
-		$data.' 12:00:00 AM';
+		if(strlen($data) <= 10)
+		{
+			$data .= $this->time;
+		}
+		// exit($data);
 		return ( method_exists($this->EE->localize, 'get_date_format') ) ? 
 			$this->EE->localize->{$this->string_to_timestamp_fn}($data, true, $this->EE->localize->get_date_format()) : 
 			$this->EE->localize->{$this->string_to_timestamp_fn}($data);
@@ -132,7 +153,9 @@ class Eevent_helper_ft extends EE_Fieldtype {
 		
 		if(is_numeric($field_data))
 		{
-			$date = ($field_data == 0) ? '' : $this->EE->localize->{$this->format_date_fn}($this->date_format_ee, $field_data);
+			$date = ($field_data == 0) ? '' : $this->EE->localize->{$this->human_time_fn}($field_data);
+			$date_split = explode(' ', $date);
+			$date = $date_split[0];
 		}
 		else
 		{

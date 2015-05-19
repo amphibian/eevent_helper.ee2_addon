@@ -23,7 +23,7 @@ class Eevent_helper_ext
 {
 	var $settings = array();
 	var $name = 'Event Helper';
-	var $version = '2.2.2';
+	var $version = '2.2.3';
 	var $description = 'Automatically sets the expiration date for event entries, and more.';
 	var $settings_exist = 'y';
 	var $docs_url = 'http://github.com/amphibian/eevent_helper.ee2_addon';
@@ -34,7 +34,9 @@ class Eevent_helper_ext
 	var $sd_id = FALSE;
 	var $sd_name = FALSE;
 	var $ed_id = FALSE;
-	var $ed_name = FALSE;	
+	var $ed_name = FALSE;
+	var $start_time = '';
+	var $end_time = ''; 	
 		
 	
 	function Eevent_helper_ext($settings='')
@@ -42,8 +44,23 @@ class Eevent_helper_ext
 	    $this->settings = $settings;
 	    $this->EE =& get_instance();
 	    
-	    // Backwards-compatibility with pre-2.6 Localize class
+	    /*
+			Backwards-compatibility with pre-2.6 Localize class
+		*/
 		$this->human_time_fn = (version_compare(APP_VER, '2.6', '>=')) ? 'human_time' : 'set_human_time';
+		
+		/*
+			Determine correct time formatting as expected by 
+			the Entry Date and Expiration Date fields
+		*/
+		$time_format = $this->EE->session->userdata('time_format', $this->EE->config->item('time_format'));
+		$include_seconds = $this->EE->session->userdata('include_seconds', $this->EE->config->item('include_seconds'));
+		
+		$start_seconds = ($include_seconds == 'y') ? ':00' : '';
+		$end_seconds = ($include_seconds == 'y') ? ':59' : '';
+		
+		$this->start_time = ($time_format == 'us' || $time_format == '12') ? ' 12:00'.$start_seconds.' AM' : ' 00:00'.$start_seconds;
+		$this->end_time = ($time_format == 'us' || $time_format == '12') ? ' 11:59'.$end_seconds.' PM' : ' 23:59'.$end_seconds;
 	}
 	
 		
@@ -235,6 +252,7 @@ class Eevent_helper_ext
 			{
 				// Control panel submission
 				case 'entry_submission_start' : 
+					// print_r($this->new_data); exit();
 					foreach($this->new_data as $k => $v)
 					{
 						$this->EE->api_channel_entries->data[$k] = $v;					
@@ -374,29 +392,29 @@ class Eevent_helper_ext
 		if(isset($this->sd_id) && !empty($this->new_data[$this->sd_id]))
 		{
 			// We submitted a custom start date via the CP, fix it
-			$this->new_data[$this->sd_id]= $this->_extract_date($this->new_data[$this->sd_id]) . ' 12:00:00 AM';
+			$this->new_data[$this->sd_id]= $this->_extract_date($this->new_data[$this->sd_id]) . $this->start_time;
 		}
 		elseif(isset($this->sd_name) && !empty($this->new_data[$this->sd_name]))
 		{
 			// We submitted a custom start date via SafeCracker, fix it
-			$this->new_data[$this->sd_name]= $this->_extract_date($this->new_data[$this->sd_name]) . ' 12:00:00 AM';
+			$this->new_data[$this->sd_name]= $this->_extract_date($this->new_data[$this->sd_name]) . $this->start_time;
 		}
 		else
 		{
 			// Fix the entry date instead
-			$this->new_data['entry_date'] = $this->_extract_date($this->new_data['entry_date']) . ' 12:00:00 AM';
+			$this->new_data['entry_date'] = $this->_extract_date($this->new_data['entry_date']) . $this->start_time;
 		}
 		
 		// Zero the end date if applicable
 		if(isset($this->ed_id) && !empty($this->new_data[$this->ed_id]))
 		{
 			// We submitted a custom end date via the CP, fix it
-			$this->new_data[$this->ed_id] = $this->_extract_date($this->new_data[$this->ed_id]) . ' 12:00:00 AM';
+			$this->new_data[$this->ed_id] = $this->_extract_date($this->new_data[$this->ed_id]) . $this->start_time;
 		}
 		if(isset($this->ed_name) && !empty($this->new_data[$this->ed_name]))
 		{
 			// We submitted a custom end date via SafeCracker, fix it
-			$this->new_data[$this->ed_name] = $this->_extract_date($this->new_data[$this->ed_name]) . ' 12:00:00 AM';
+			$this->new_data[$this->ed_name] = $this->_extract_date($this->new_data[$this->ed_name]) . $this->start_time;
 		}				
 	}
 
@@ -406,29 +424,29 @@ class Eevent_helper_ext
 		if(isset($this->ed_id) && !empty($this->new_data[$this->ed_id]))
 		{ 
 			// We're using an end date via the CP
-			$this->new_data['expiration_date'] = $this->_extract_date($this->new_data[$this->ed_id]) . ' 11:59:59 PM';
+			$this->new_data['expiration_date'] = $this->_extract_date($this->new_data[$this->ed_id]) . $this->end_time;
 		}
 		elseif(isset($this->ed_name) && !empty($this->new_data[$this->ed_name]))
 		{ 
 			// We're using an end date via SafeCracker
-			$this->new_data['expiration_date'] = $this->_extract_date($this->new_data[$this->ed_name]) . ' 11:59:59 PM';
+			$this->new_data['expiration_date'] = $this->_extract_date($this->new_data[$this->ed_name]) . $this->end_time;
 		}
 		else
 		{ 
 			if(isset($this->sd_id) && !empty($this->new_data[$this->sd_id]))
 			{
 				// We're using a custom start date via the CP
-				$this->new_data['expiration_date'] = $this->_extract_date($this->new_data[$this->sd_id]) . ' 11:59:59 PM';
+				$this->new_data['expiration_date'] = $this->_extract_date($this->new_data[$this->sd_id]) . $this->end_time;
 			}
 			elseif(isset($this->sd_name) && !empty($this->new_data[$this->sd_name]))
 			{
 				// We're using a custom start date via SafeCracker
-				$this->new_data['expiration_date'] = $this->_extract_date($this->new_data[$this->sd_name]) . ' 11:59:59 PM';
+				$this->new_data['expiration_date'] = $this->_extract_date($this->new_data[$this->sd_name]) . $this->end_time;
 			}
 			else
 			{
 				// We're using the entry_date
-				$this->new_data['expiration_date'] = $this->_extract_date($this->new_data['entry_date']) . ' 11:59:59 PM';
+				$this->new_data['expiration_date'] = $this->_extract_date($this->new_data['entry_date']) . $this->end_time;
 			}
 		}	
 	}
@@ -439,12 +457,12 @@ class Eevent_helper_ext
 		if(isset($this->sd_id) && !empty($this->new_data[$this->sd_id]))
 		{
 			// We're using a custom start date via the CP
-			$this->new_data['entry_date'] = ($this->_extract_date($this->new_data[$this->sd_id])) ? $this->_extract_date($this->new_data[$this->sd_id]).' 12:00:00 AM' : $this->new_data[$this->sd_id];
+			$this->new_data['entry_date'] = ($this->_extract_date($this->new_data[$this->sd_id])) ? $this->_extract_date($this->new_data[$this->sd_id]).$this->start_time : $this->new_data[$this->sd_id];
 		}
 		elseif(isset($this->sd_name) && !empty($this->new_data[$this->sd_name]))
 		{
 			// We're using a custom start date via SafeCracker
-			$this->new_data['entry_date'] = ($this->_extract_date($this->new_data[$this->sd_name])) ? $this->_extract_date($this->new_data[$this->sd_name]).' 12:00:00 AM' : $this->new_data[$this->sd_name];
+			$this->new_data['entry_date'] = ($this->_extract_date($this->new_data[$this->sd_name])) ? $this->_extract_date($this->new_data[$this->sd_name]).$this->start_time : $this->new_data[$this->sd_name];
 		}
 	}
 	
