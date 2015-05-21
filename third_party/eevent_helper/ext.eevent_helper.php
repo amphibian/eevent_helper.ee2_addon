@@ -23,7 +23,7 @@ class Eevent_helper_ext
 {
 	var $settings = array();
 	var $name = 'Event Helper';
-	var $version = '2.2.4';
+	var $version = '2.2.5';
 	var $description = 'Automatically sets the expiration date for event entries, and more.';
 	var $settings_exist = 'y';
 	var $docs_url = 'http://github.com/amphibian/eevent_helper.ee2_addon';
@@ -39,7 +39,7 @@ class Eevent_helper_ext
 	var $end_time = ''; 	
 		
 	
-	function Eevent_helper_ext($settings='')
+	function __construct($settings='')
 	{
 	    $this->settings = $settings;
 	    $this->EE =& get_instance();
@@ -526,41 +526,7 @@ class Eevent_helper_ext
 		}
 		return false;
 	}
-	
-	
-	function cp_js_end($data)
-	{
-
-		if($this->EE->extensions->last_call !== FALSE)
-		{
-			$data = $this->EE->extensions->last_call;
-		}
-					
-		// Doesn't appear to be a way to determine where you are in the control panel,
-		// as the C and M $_GET variables will always be 'javascript' and 'load'
-		// So I guess we just load this on every screen?
-		$settings = $this->get_settings();
-		if(!empty($settings))
-		{
-			foreach($settings['start_date_field'] as $setting)
-			{
-				if($setting != 'entry_date')
-				{
-					$data .= "$('select#field_offset_".$setting."').hide();".NL;
-				}
-			}
-			foreach($settings['end_date_field'] as $setting)
-			{
-				if($setting != 'none')
-				{
-					$data .= "$('select#field_offset_".$setting."').hide();";
-				}
-			}
-		}
-						
-		return $data;
-	}
-	
+		
 
 	function activate_extension()
 	{
@@ -599,6 +565,7 @@ class Eevent_helper_ext
 	    
 		if($current <= '2.0.2')
 		{
+			// Add Safecracker support
 			$this->EE->db->query($this->EE->db->insert_string('exp_extensions',
 					array(
 						'extension_id' => '',
@@ -616,6 +583,7 @@ class Eevent_helper_ext
 
 		if($current <= '2.1.7')
 		{
+			// Add Channel Form support
 			$this->EE->db->query($this->EE->db->insert_string('exp_extensions',
 					array(
 						'extension_id' => '',
@@ -629,6 +597,16 @@ class Eevent_helper_ext
 						)
 					)
 				);		
+		}
+		
+		if($current <= '2.2.5')
+		{
+			// Remove cp_js_end hook
+			$this->EE->db->where(array(
+				'class' => 'Eevent_helper_ext',
+				'method' => 'cp_js_end'
+			));
+			$this->EE->db->delete('extensions');		
 		}
 		
 		$this->EE->db->query("UPDATE exp_extensions 
