@@ -23,7 +23,7 @@ class Eevent_helper_ext
 {
 	var $settings = array();
 	var $name = 'Event Helper';
-	var $version = '2.2.3';
+	var $version = '2.2.4';
 	var $description = 'Automatically sets the expiration date for event entries, and more.';
 	var $settings_exist = 'y';
 	var $docs_url = 'http://github.com/amphibian/eevent_helper.ee2_addon';
@@ -247,7 +247,7 @@ class Eevent_helper_ext
 			}
 						
 			$this->_revert_dropdate();
-						
+									
 			switch($hook)
 			{
 				// Control panel submission
@@ -457,12 +457,12 @@ class Eevent_helper_ext
 		if(isset($this->sd_id) && !empty($this->new_data[$this->sd_id]))
 		{
 			// We're using a custom start date via the CP
-			$this->new_data['entry_date'] = ($this->_extract_date($this->new_data[$this->sd_id])) ? $this->_extract_date($this->new_data[$this->sd_id]).$this->start_time : $this->new_data[$this->sd_id];
+			$this->new_data['entry_date'] = $this->new_data[$this->sd_id];
 		}
 		elseif(isset($this->sd_name) && !empty($this->new_data[$this->sd_name]))
 		{
 			// We're using a custom start date via SafeCracker
-			$this->new_data['entry_date'] = ($this->_extract_date($this->new_data[$this->sd_name])) ? $this->_extract_date($this->new_data[$this->sd_name]).$this->start_time : $this->new_data[$this->sd_name];
+			$this->new_data['entry_date'] = $this->new_data[$this->sd_name];
 		}
 	}
 	
