@@ -23,7 +23,7 @@ class Eevent_helper_ft extends EE_Fieldtype {
 
 	var $info = array(
 		'name'		=> 'Event Helper Date',
-		'version'	=> '2.2.5'
+		'version'	=> '2.2.6'
 	);
 
 	var $has_array_data = FALSE;

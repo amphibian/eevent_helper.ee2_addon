@@ -23,7 +23,7 @@ class Eevent_helper_ext
 {
 	var $settings = array();
 	var $name = 'Event Helper';
-	var $version = '2.2.5';
+	var $version = '2.2.6';
 	var $description = 'Automatically sets the expiration date for event entries, and more.';
 	var $settings_exist = 'y';
 	var $docs_url = 'http://github.com/amphibian/eevent_helper.ee2_addon';
@@ -535,7 +535,6 @@ class Eevent_helper_ext
 	    	'entry_submission_start',
 	    	'safecracker_submit_entry_start',
 	    	'channel_form_submit_entry_start',
-	    	'cp_js_end'
 	    );
 	    
 	    foreach($hooks as $hook)
